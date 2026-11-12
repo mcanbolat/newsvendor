@@ -96,10 +96,23 @@
           <div><label>Cost · high margin</label><input name="cost_high_margin" type="number" step="0.01" value="3"></div>
           <div><label>Cost · low margin</label><input name="cost_low_margin" type="number" step="0.01" value="9"></div>
         </div>
+        <label>Demand distribution</label>
+        <select name="demand_dist">
+          <option value="uniform">Uniform (all values equally likely)</option>
+          <option value="normal">Normal (bell-shaped)</option>
+          <option value="triangular">Triangular (most likely value)</option>
+        </select>
+        <div class="row2 hidden" id="normalFields">
+          <div><label>Mean</label><input name="demand_mean" type="number" step="any" value="150"></div>
+          <div><label>Std. deviation</label><input name="demand_sd" type="number" step="any" value="50"></div>
+        </div>
+        <div class="hidden" id="triFields"><label>Most likely value (mode)</label><input name="demand_mode" type="number" step="any" value="150"></div>
         <div class="row2">
           <div><label>Demand min</label><input name="demand_min" type="number" value="1"></div>
           <div><label>Demand max</label><input name="demand_max" type="number" value="300"></div>
         </div>
+        <div class="muted" id="rangeNote" style="font-size:12px">Students can only order within this range.</div>
+        <div id="distSketch" style="margin-top:6px"></div>
         <label>Assign students to</label>
         <select name="assignment">
           <option value="random">Both conditions (balanced random)</option>
@@ -172,6 +185,7 @@
 </main>
 
 <script src="config.js" onerror="void 0"></script>
+<script src="nvmath.js"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -184,7 +198,7 @@ const COLORS = { high: "#1f6f78", low: "#c0702a" };
 const LABEL = { high: "High margin", low: "Low margin" };
 
 // ---------- newsvendor math (mirrors schema.sql) ----------
-const qstar = (s, c) => Math.round(s.demand_min + (s.price - c) / (s.price - s.salvage) * (s.demand_max - s.demand_min));
+const qstar = (s, c) => NV.qstar(s, c);
 const nvProfit = (q, d, p, c, sv) => p * Math.min(q, d) + sv * Math.max(q - d, 0) - c * q;
 const mean = a => a.length ? a.reduce((t, x) => t + x, 0) / a.length : null;
 const sd = a => { if (a.length < 2) return null; const m = mean(a); return Math.sqrt(a.reduce((t, x) => t + (x - m) ** 2, 0) / (a.length - 1)); };
@@ -230,7 +244,7 @@ function supabaseApi() {
 function demoApi() {
   const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
   const S = { id: "demo1", code: "DEMO", title: "Simulated class", n_rounds: 30, price: 12, salvage: 0, cost_high_margin: 3, cost_low_margin: 9,
-              demand_min: 1, demand_max: 300, assignment: "random", param_display: "always", show_leaderboard: true, is_open: true, created_at: new Date().toISOString() };
+              demand_min: 1, demand_max: 300, demand_dist: "uniform", assignment: "random", param_display: "always", show_leaderboard: true, is_open: true, created_at: new Date().toISOString() };
   const demand = Array.from({ length: 30 }, (_, i) => ({ round: i + 1, demand: rnd(1, 300) }));
   const participants = [], decisions = [];
   const names = ["Ava","Ben","Cleo","Dev","Eli","Fay","Gus","Hana","Ivo","Jun","Kai","Lea","Max","Nia","Oto","Pia","Quin","Rae","Sam","Tia","Uma","Vic","Wes","Xia","Yao","Zed","Ana","Bo","Cy","Di","Ed","Flo"];
@@ -263,7 +277,7 @@ function demoApi() {
 function analyse(sess, data) {
   const byP = new Map(data.participants.map(p => [p.id, { ...p, decs: [] }]));
   data.decisions.forEach(d => byP.get(d.participant_id)?.decs.push(d));
-  const meanD = (sess.demand_min + sess.demand_max) / 2;
+  const meanD = NV.mean(sess);
   const students = [...byP.values()].map(p => {
     const ds = p.decs.sort((a, b) => a.round - b.round), c = Number(p.unit_cost), qs = qstar(sess, c);
     const orders = ds.map(d => d.order_qty);
@@ -303,7 +317,7 @@ function renderList() {
   $("sessList").innerHTML = sessions.length ? sessions.map(s =>
     `<div class="sess ${current?.id === s.id ? "active" : ""}" data-id="${s.id}">
        <span class="code">${esc(s.code)}</span><span class="pill ${s.is_open ? "open" : "closed"}">${s.is_open ? "open" : "closed"}</span>
-       <div class="muted">${esc(s.title)} · ${new Date(s.created_at).toLocaleDateString()}</div></div>`).join("")
+       <div class="muted">${esc(s.title)} · ${NV.label(s)} · ${new Date(s.created_at).toLocaleDateString()}</div></div>`).join("")
     : `<span class="muted">No sessions yet.</span>`;
   document.querySelectorAll(".sess").forEach(el => el.onclick = () => select(el.dataset.id));
 }
@@ -331,7 +345,7 @@ async function refresh() {
   $("condTable").innerHTML = `<tr><th>Condition</th><th>n</th><th>Cost</th><th>CR</th><th>Q*</th><th>Mean order</th><th>Pull-to-centre</th><th>Chasing r</th><th>Efficiency</th></tr>` +
     A.conds.map(c => `<tr><td><span class="dot" style="background:${COLORS[c.cond]}"></span>${LABEL[c.cond]}</td><td>${c.n}</td><td>$${fmt(c.cost, 2)}</td>
       <td>${fmt(c.cr, 2)}</td><td>${c.qs}</td><td><b>${fmt(c.mean_order)}</b></td><td>${fmt(c.ptc, 2)}</td><td>${fmt(c.chase, 2)}</td><td>${fmt(c.eff)}%</td></tr>`).join("") ;
-  $("debrief").innerHTML = `<b>Debrief.</b> Critical ratio CR = (p − c) / (p − s). With uniform demand on [${s.demand_min}, ${s.demand_max}], Q* = ${s.demand_min} + CR × ${s.demand_max - s.demand_min}. Mean demand is ${fmt(A.meanD)}.
+  $("debrief").innerHTML = `<b>Debrief.</b> Critical ratio CR = (p − c) / (p − s), and Q* = F⁻¹(CR), the demand level with probability CR of not being exceeded. Demand here: ${NV.describe(s).short}${s.demand_dist === "uniform" ? ` (so Q* = ${s.demand_min} + CR × ${s.demand_max - s.demand_min})` : `, limited to ${s.demand_min}–${s.demand_max}`}. Mean demand is ${fmt(A.meanD)}.
      Pull-to-centre: 0 means ordering at Q*, 1 means ordering at mean demand. Chasing r &gt; 0 means students raise orders after stock-outs and cut them after leftovers.`;
 
   // order-by-round chart
@@ -397,14 +411,33 @@ $("csvStudents").onclick = () => csv(analyse(current, lastData).students.map(p =
   pull_to_center: p.ptc, demand_chasing_corr: p.chase, total_profit: p.total, efficiency_pct: p.eff, mean_response_s: p.rt, mean_param_reveals: p.reveals })), `students_${current.code}.csv`);
 
 const nf = $("newForm");
-function preview() { const f = Object.fromEntries(new FormData(nf)), s = { demand_min: +f.demand_min, demand_max: +f.demand_max, price: +f.price, salvage: +f.salvage };
-  $("qPreview").textContent = `Q* high margin = ${qstar(s, +f.cost_high_margin)}, Q* low margin = ${qstar(s, +f.cost_low_margin)}, mean demand = ${(s.demand_min + s.demand_max) / 2}`; }
-nf.oninput = preview;
+function formSession() { const f = Object.fromEntries(new FormData(nf)), d = f.demand_dist;
+  return { demand_dist: d, demand_min: +f.demand_min, demand_max: +f.demand_max, price: +f.price, salvage: +f.salvage,
+           demand_mean: d === "normal" ? +f.demand_mean : null, demand_sd: d === "normal" ? +f.demand_sd : null,
+           demand_mode: d === "triangular" ? +f.demand_mode : null }; }
+function formProblem(s) {
+  if (!(s.demand_max > s.demand_min) || s.demand_min < 0) return "Demand max must be above demand min (and min at least 0).";
+  if (s.demand_dist === "normal" && !(s.demand_sd > 0)) return "Standard deviation must be above 0.";
+  if (s.demand_dist === "normal" && (s.demand_mean < s.demand_min || s.demand_mean > s.demand_max)) return "The mean must lie between demand min and max.";
+  if (s.demand_dist === "triangular" && (s.demand_mode < s.demand_min || s.demand_mode > s.demand_max)) return "The most likely value must lie between demand min and max.";
+  return null; }
+function preview() { const f = Object.fromEntries(new FormData(nf)), s = formSession(), bad = formProblem(s);
+  $("normalFields").classList.toggle("hidden", s.demand_dist !== "normal"); $("triFields").classList.toggle("hidden", s.demand_dist !== "triangular");
+  $("qPreview").textContent = bad || `Q* high margin = ${qstar(s, +f.cost_high_margin)}, Q* low margin = ${qstar(s, +f.cost_low_margin)}, mean demand = ${fmt(NV.mean(s))}`;
+  $("distSketch").innerHTML = bad ? "" : NV.sketch(s, { h: 90 }); }
+// For a normal distribution, keep the order range at mean ± 3 SD (min not below 0) unless the instructor edits it
+nf.oninput = e => {
+  if (["demand_mean", "demand_sd", "demand_dist"].includes(e.target.name) && nf.demand_dist.value === "normal") {
+    const mu = +nf.demand_mean.value, sd = +nf.demand_sd.value;
+    if (sd > 0) { nf.demand_min.value = Math.max(0, Math.round(mu - 3 * sd)); nf.demand_max.value = Math.round(mu + 3 * sd); }
+  }
+  preview(); };
 nf.code.value = "C" + Math.random().toString(36).slice(2, 7).toUpperCase();
 nf.onsubmit = async e => { e.preventDefault(); $("newErr").textContent = "";
-  const f = Object.fromEntries(new FormData(nf));
+  const f = Object.fromEntries(new FormData(nf)), d = formSession(), bad = formProblem(d);
+  if (bad) { $("newErr").textContent = bad; return; }
   const row = { title: f.title, code: f.code.toUpperCase(), n_rounds: +f.n_rounds, price: +f.price, salvage: +f.salvage,
-    cost_high_margin: +f.cost_high_margin, cost_low_margin: +f.cost_low_margin, demand_min: +f.demand_min, demand_max: +f.demand_max,
+    cost_high_margin: +f.cost_high_margin, cost_low_margin: +f.cost_low_margin, ...d,
     assignment: f.assignment, param_display: f.param_display, show_leaderboard: !!f.show_leaderboard };
   try { const s = await api.create(row); sessions = await api.sessions(); nf.code.value = "C" + Math.random().toString(36).slice(2, 7).toUpperCase(); await select(s.id); }
   catch (err) { $("newErr").textContent = /duplicate/.test(err.message) ? "That code is already used — pick another." : err.message; } };

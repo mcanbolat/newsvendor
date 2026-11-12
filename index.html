@@ -55,6 +55,9 @@
   .hidden{display:none!important}
   ul.rules{padding-left:20px;margin:8px 0} ul.rules li{margin:6px 0}
   .reveal{background:var(--soft);border:1px dashed var(--muted);color:var(--ink);margin-top:0}
+  .sketch{background:var(--soft);border-radius:8px;padding:10px 12px;margin-top:12px}
+  .sketch .k,.param.wide .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+  .param.wide svg{max-height:80px}
   .big{font-family:Fraunces,Georgia,serif;font-size:44px;font-weight:800;text-align:center;margin:8px 0}
 </style>
 </head>
@@ -90,9 +93,11 @@
       <li>Each unit you sell earns <b id="iPrice"></b>.</li>
       <li id="iSalvageLi">Units left unsold at the end of the day are <span id="iSalvage"></span>.</li>
       <li>If demand exceeds your order, the extra customers leave and you earn nothing from them.</li>
-      <li>Daily demand is random: any whole number from <b id="iMin"></b> to <b id="iMax"></b> is equally likely, and each day is independent of the others.</li>
+      <li><span id="iDemand"></span> Each day is independent of the others.</li>
+      <li>You can order any whole number from <b id="iMin"></b> to <b id="iMax"></b>.</li>
       <li>You will play <b id="iRounds"></b> rounds. Try to earn as much total profit as you can.</li>
     </ul>
+    <div class="sketch"><div class="k">Shape of daily demand</div><div id="iSketch"></div></div>
     <button id="startBtn">Start round 1</button>
   </section>
 
@@ -111,10 +116,11 @@
         <div class="param"><div class="k">Unit cost</div><div class="v" id="pCost"></div></div>
         <div class="param"><div class="k">Salvage value</div><div class="v" id="pSalv"></div></div>
         <div class="param"><div class="k">Demand range</div><div class="v" id="pRange"></div></div>
+        <div class="param wide"><div class="k">Demand: <span id="pDist"></span></div><div id="pSketch"></div></div>
       </div>
 
-      <form id="orderForm" autocomplete="off">
-        <label for="qty">How many units do you order?</label>
+      <form id="orderForm" autocomplete="off" novalidate>
+        <label for="qty">How many units do you order? <span class="muted" id="qtyHint"></span></label>
         <input id="qty" type="number" inputmode="numeric" min="0" step="1" required>
         <button type="submit" id="orderBtn">Place order</button>
         <div class="err" id="orderErr"></div>
@@ -160,6 +166,7 @@
 </div>
 
 <script src="config.js" onerror="void 0"></script>
+<script src="nvmath.js"></script>
 <script>
 (() => {
   const $ = id => document.getElementById(id);
@@ -185,7 +192,7 @@
   }
 
   const demo = (() => {
-    const S = { title: "Demo session", price: 12, salvage: 0, demand_min: 1, demand_max: 300, n_rounds: 30,
+    const S = { title: "Demo session", price: 12, salvage: 0, demand_min: 1, demand_max: 300, demand_dist: "uniform", n_rounds: 30,
                 param_display: new URLSearchParams(location.search).get("click") ? "click" : "always", show_leaderboard: true, is_open: true };
     let p = null;
     const demand = Array.from({length: S.n_rounds}, () => S.demand_min + Math.floor(Math.random() * (S.demand_max - S.demand_min + 1)));
@@ -201,7 +208,7 @@
         return { round: r, order_qty: q, demand: d, sales: s, leftover: q - s, shortage: Math.max(d - q, 0), profit: prof,
                  cum_profit: p.history.reduce((t, h) => t + h.profit, 0), done: r === S.n_rounds }; },
       leaderboard: () => { const tot = p.history.reduce((t, h) => t + h.profit, 0);
-        const qs = Math.round(S.demand_min + (S.price - p.cost) / (S.price - S.salvage) * (S.demand_max - S.demand_min));
+        const qs = NV.qstar(S, p.cost);
         const opt = p.history.reduce((t, h) => t + S.price * Math.min(qs, h.demand) + S.salvage * Math.max(qs - h.demand, 0) - p.cost * qs, 0);
         return [{ condition: p.condition, rank: 1, nickname: p.nickname, rounds: p.history.length, total_profit: tot, efficiency: opt > 0 ? Math.round(1000 * tot / opt) / 10 : null }]; }
     };
@@ -220,6 +227,11 @@
     $("iCost").textContent = money(G.cost); $("iPrice").textContent = money(G.price);
     $("iSalvage").innerHTML = sv > 0 ? "sold for salvage at <b>" + money(sv) + "</b> each" : "<b>worthless</b> (thrown away)";
     $("iMin").textContent = G.demand_min; $("iMax").textContent = G.demand_max; $("iRounds").textContent = G.n_rounds;
+    const desc = NV.describe(G);
+    $("iDemand").innerHTML = desc.long; $("pDist").textContent = desc.short;
+    $("iSketch").innerHTML = NV.sketch(G); $("pSketch").innerHTML = NV.sketch(G, { h: 80 });
+    $("qty").min = G.demand_min; $("qty").max = G.demand_max; $("qty").placeholder = G.demand_min + "–" + G.demand_max;
+    $("qtyHint").textContent = "(" + G.demand_min + "–" + G.demand_max + ")";
     $("pPrice").textContent = money(G.price); $("pCost").textContent = money(G.cost); $("pSalv").textContent = money(sv);
     $("pRange").textContent = G.demand_min + "–" + G.demand_max; $("pN").textContent = G.n_rounds;
     $("mastSub").textContent = G.title + " · " + G.session_code;
@@ -280,7 +292,8 @@
   $("orderForm").addEventListener("submit", async e => {
     e.preventDefault(); if (busy) return;
     const q = Number($("qty").value);
-    if (!Number.isInteger(q) || q < 0) { $("orderErr").textContent = "Enter a whole number, 0 or more."; return; }
+    if ($("qty").value.trim() === "" || !Number.isInteger(q) || q < G.demand_min || q > G.demand_max) {
+      $("orderErr").textContent = `Enter a whole number from ${G.demand_min} to ${G.demand_max}.`; return; }
     busy = true; $("orderBtn").disabled = true; $("orderErr").textContent = "";
     try {
       const r = await rpc("submit_order", { p_participant: G.participant_id, p_token: G.token, p_round: G.history.length + 1,

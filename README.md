@@ -21,9 +21,16 @@ shows a simulated class.
 
 - Each round a student picks an order quantity Q, then sees demand D, how many units sold, and the profit:
   `profit = p·min(Q,D) + s·max(Q−D,0) − c·Q`.
-- Demand is uniform on whole numbers between [min, max]. It is drawn **on the server** when you create the
-  session, so every student in the session faces the **same demand sequence**, and nobody can peek at
-  it from the browser.
+- Each session uses one of three **demand distributions**, chosen when you create it:
+  - **uniform**: every whole number from min to max is equally likely;
+  - **normal**: you set the mean and SD, and draws are truncated to [min, max]. The form suggests mean ± 3 SD as the range;
+  - **triangular**: you set min, the most likely value and max.
+
+  Students see a plain-language description and a sketch of the shape. Q* and mean demand are calculated with
+  the formula for the chosen distribution.
+- Demand is drawn **on the server** when you create the session, so every student in the session faces the
+  **same demand sequence**, and nobody can peek at it from the browser.
+- **Orders are limited to the demand range** [min, max]. The browser checks this, and the server enforces it.
 - There are two conditions. **High margin** uses a low unit cost (default c = 3, Q* = 225) and **low margin**
   uses a high unit cost (default c = 9, Q* = 76), with p = 12, s = 0 and demand U[1, 300]. These are the
   parameters from Schweitzer & Cachon (2000). Students can be split between the conditions by balanced
