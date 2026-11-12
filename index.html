@@ -203,7 +203,7 @@
       leaderboard: () => { const tot = p.history.reduce((t, h) => t + h.profit, 0);
         const qs = Math.round(S.demand_min + (S.price - p.cost) / (S.price - S.salvage) * (S.demand_max - S.demand_min));
         const opt = p.history.reduce((t, h) => t + S.price * Math.min(qs, h.demand) + S.salvage * Math.max(qs - h.demand, 0) - p.cost * qs, 0);
-        return [{ condition: p.condition, rank: 1, nickname: p.nickname, rounds: p.history.length, total_profit: tot, efficiency: opt ? Math.round(1000 * tot / opt) / 10 : null }]; }
+        return [{ condition: p.condition, rank: 1, nickname: p.nickname, rounds: p.history.length, total_profit: tot, efficiency: opt > 0 ? Math.round(1000 * tot / opt) / 10 : null }]; }
     };
   })();
 

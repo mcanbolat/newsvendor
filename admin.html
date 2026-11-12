@@ -276,7 +276,7 @@ function analyse(sess, data) {
     return { ...p, qs, rounds: ds.length, mean_order: mo, sd_order: sd(orders),
       mad: mean(ds.map(d => Math.abs(d.order_qty - qs))),
       ptc: mo == null || meanD === qs ? null : (mo - qs) / (meanD - qs),
-      chase: corr(chg, err), total: tot, eff: opt ? 100 * tot / opt : null,
+      chase: corr(chg, err), total: tot, eff: opt > 0 ? 100 * tot / opt : null,
       rt: rts.length ? mean(rts) / 1000 : null, reveals: rv.length ? mean(rv) : null };
   });
   const played = students.filter(s => s.rounds > 0);

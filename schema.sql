@@ -295,9 +295,9 @@ language sql stable security definer set search_path = public as $$
   )
   select condition,
          rank() over (partition by condition
-                      order by total_profit / nullif(opt_profit, 0) desc nulls last),
+                      order by case when opt_profit > 0 then total_profit / opt_profit end desc nulls last),
          nickname, rounds, round(total_profit, 2),
-         round(100 * total_profit / nullif(opt_profit, 0), 1)
+         case when opt_profit > 0 then round(100 * total_profit / opt_profit, 1) end
   from agg
   order by 1, 2, 3
 $$;
@@ -390,7 +390,7 @@ select session_id, session_code, participant_id, nickname, student_ref, conditio
        round(corr(order_change, prev_error)::numeric, 3) as demand_chasing_corr,
        round(sum(profit), 2)                            as total_profit,
        round(sum(opt_profit), 2)                        as optimal_profit,
-       round(100 * sum(profit) / nullif(sum(opt_profit), 0), 1) as efficiency_pct,
+       case when sum(opt_profit) > 0 then round(100 * sum(profit) / sum(opt_profit), 1) end as efficiency_pct,
        round(avg(response_ms) / 1000.0, 2)              as mean_response_s,
        round(avg(param_reveals), 2)                     as mean_param_reveals
 from public.v_decisions
