@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FSA Simulation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f2f5f4; --card:#ffffff; --ink:#18211f; --muted:#5f6b68; --rule:#d5dedb;
+    --accent:#1f6f78; --accent-ink:#fff; --warm:#b4441c; --soft:#e6efed; --bad:#a33a2a; --hl:#fffbd6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .wrap{max-width:660px;margin:0 auto;padding:20px 16px 60px}
+  header.mast{text-align:center;border-bottom:3px double var(--ink);padding-bottom:10px;margin-bottom:18px}
+  .mast h1{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(26px,6.5vw,38px);margin:0;letter-spacing:-.5px}
+  .mast .sub{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:2px}
+  .demo{background:#fff4c2;border:1px solid #e4cf6a;color:#5b4b00;font-size:13px;border-radius:8px;padding:8px 12px;margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:20px;margin-bottom:14px}
+  h2{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:22px;margin:0 0 10px}
+  label{display:block;font-weight:600;font-size:14px;margin:12px 0 4px}
+  input[type=text]{width:100%;font:inherit;font-size:18px;padding:12px;border:1px solid var(--rule);border-radius:8px;background:#fff}
+  input:focus{outline:2px solid var(--accent);outline-offset:1px}
+  button{font:inherit;font-weight:600;border:0;border-radius:8px;padding:13px 18px;cursor:pointer;background:var(--accent);color:var(--accent-ink);font-size:16px}
+  button.block{width:100%;margin-top:14px}
+  button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+  button:disabled{opacity:.5;cursor:default}
+  .err{color:var(--bad);font-size:14px;margin-top:8px;min-height:1em}
+  .muted{color:var(--muted);font-size:14px}
+  .hidden{display:none!important}
+
+  /* intro slides */
+  .slide{text-align:center;min-height:330px;display:flex;flex-direction:column;justify-content:center;gap:16px}
+  .slide .txt{font-size:20px;line-height:1.45}
+  .slide .art{display:flex;justify-content:center}
+  .slide .art svg{width:170px;height:auto}
+  .dots{display:flex;gap:6px;justify-content:center;margin:14px 0 4px}
+  .dots i{width:8px;height:8px;border-radius:50%;background:var(--rule)} .dots i.on{background:var(--accent)}
+  .nav{display:flex;gap:10px} .nav button{flex:1}
+  table.t1{margin:0 auto;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+  table.t1 td,table.t1 th{padding:4px 8px;border-bottom:1px solid var(--rule);text-align:right;white-space:nowrap}
+  table.t1 td:first-child{white-space:normal}
+  table.t1 td:first-child,table.t1 th:first-child{text-align:left}
+  table.t1 tr:last-child td{font-weight:700}
+
+  /* decision screen (mirrors the Excel form) */
+  .prompt{background:#9db7d5;color:#0e1b2a;border-radius:6px;padding:10px 14px;font-size:17px;margin-bottom:16px}
+  .grid{display:grid;grid-template-columns:1fr 150px;gap:10px 14px;align-items:center}
+  .grid .k{font-size:16px}
+  .box{font:inherit;font-size:18px;padding:10px 12px;border:1px solid #9aa6a3;border-radius:4px;background:#fff;text-align:right;font-variant-numeric:tabular-nums;width:100%}
+  .box.ro{background:#f4f6f5;color:#555}
+  .box.in{background:var(--hl)}
+  .cont{display:flex;gap:10px;margin-top:14px} .cont button{flex:1}
+  .graph{border:1px solid var(--rule);border-radius:6px;padding:8px 10px 6px;margin-top:18px}
+  .graph .k{font-size:12px;color:var(--muted)}
+  .progress{height:4px;background:var(--rule);border-radius:2px;overflow:hidden;margin:-4px 0 16px}
+  .progress div{height:100%;background:var(--accent);transition:width .3s}
+
+  /* modal dialogs */
+  .overlay{position:fixed;inset:0;background:rgba(15,25,23,.45);display:flex;align-items:center;justify-content:center;padding:14px;z-index:10}
+  .modal{background:#fff;border-radius:12px;max-width:620px;width:100%;max-height:92vh;overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+  .modal .bar{background:var(--soft);padding:10px 16px;font-size:14px;font-weight:600;border-bottom:1px solid var(--rule);border-radius:12px 12px 0 0}
+  .modal .body{padding:18px 20px}
+  .modal .foot{display:flex;justify-content:flex-end;padding:0 20px 18px}
+  .modal .foot button{min-width:180px}
+  .incident{display:grid;grid-template-columns:160px 1fr;gap:18px;align-items:center;font-size:20px}
+  .incident img,.taximg img{width:100%;height:auto;display:block}
+  .taximg{max-width:320px;margin:0 auto 14px}
+  .modal p{margin:8px 0;font-size:17px}
+  .cats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:14px 0}
+  .cat{border:1px solid var(--rule);border-radius:8px;padding:10px 12px;cursor:pointer;display:block;margin:0;font-weight:400}
+  .cat:has(input:checked){border-color:var(--accent);background:var(--soft)}
+  .cat .h{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:15px;margin-bottom:6px;gap:6px}
+  .cat ul{margin:0;padding-left:16px;font-size:13.5px;color:#333} .cat li{margin:2px 0}
+  .cat input,.forf input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+  .forf{display:flex;gap:12px;align-items:center;color:#c0281a;font-size:15px;margin:0;font-weight:400;cursor:pointer}
+  @media (max-width:560px){ .cats{grid-template-columns:1fr} .incident{grid-template-columns:110px 1fr;font-size:17px} .grid{grid-template-columns:1fr 120px} }
+
+  .big{font-family:Fraunces,Georgia,serif;font-size:34px;font-weight:800;text-align:center;margin:4px 0}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;margin:12px 0}
+  .stats .k{font-size:12px;color:var(--muted)} .stats .v{font-family:Fraunces,Georgia,serif;font-size:22px;font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <h1>FSA Simulation</h1>
+    <div class="sub" id="mastSub">Flexible Spending Account decisions</div>
+  </header>
+  <div id="demoBanner" class="demo hidden">Demo mode: nothing is saved. Add Supabase keys in <code>config.js</code> to collect data.
+    Force a condition with <code>?k=astute|uninformed&amp;i=yes|no</code>.</div>
+
+  <!-- JOIN -->
+  <section id="vJoin" class="card hidden">
+    <h2>Join your class session</h2>
+    <form id="joinForm" autocomplete="off">
+      <label for="code">Session code</label>
+      <input id="code" type="text" required maxlength="12" placeholder="e.g. FSA101" style="text-transform:uppercase">
+      <label for="nick">Nickname</label>
+      <input id="nick" type="text" required maxlength="40">
+      <label for="sref">Student ID <span class="muted">(optional, only your instructor sees it)</span></label>
+      <input id="sref" type="text" maxlength="60">
+      <button class="block" type="submit" id="joinBtn">Join</button>
+      <div class="err" id="joinErr"></div>
+    </form>
+  </section>
+
+  <!-- INTRO (one slide at a time, as in the original directions) -->
+  <section id="vIntro" class="card hidden">
+    <div class="slide" id="slide"></div>
+    <div class="dots" id="dots"></div>
+    <div class="nav"><button class="ghost" id="backBtn" type="button">Back</button><button id="fwdBtn" type="button">Next</button></div>
+  </section>
+
+  <!-- DECISION SCREEN -->
+  <section id="vPlay" class="card hidden">
+    <div class="prompt">Please enter your contribution amount and click Continue to proceed to the next year.</div>
+    <div class="progress"><div id="pBar" style="width:0"></div></div>
+    <form id="amtForm" autocomplete="off" novalidate>
+      <div class="grid">
+        <div class="k">Year</div><output class="box ro" id="pYear">1</output>
+        <label class="k" for="amt" style="margin:0;font-weight:400">FSA Amount <span class="muted" id="amtHint"></span></label>
+        <input class="box in" id="amt" type="text" inputmode="numeric">
+        <div class="k">The amount of FSA eligible healthcare need last year</div><output class="box ro" id="pNeed">0</output>
+        <div class="k">The FSA amount you contributed last year</div><output class="box ro" id="pLast">0</output>
+      </div>
+      <div class="err" id="amtErr"></div>
+      <div class="cont"><button type="submit" id="contBtn">Continue</button></div>
+    </form>
+    <div class="graph">
+      <div class="k">Historical FSA Eligible Healthcare Need Graph</div>
+      <div id="needGraph"></div>
+    </div>
+  </section>
+
+  <!-- DONE -->
+  <section id="vDone" class="hidden">
+    <div class="card" style="text-align:center">
+      <h2>Thank you!</h2>
+      <p>The experiment is completed. Please wait for your instructor's directions.</p>
+    </div>
+    <div class="card hidden" id="debrief">
+      <h2 style="font-size:19px">Your 15 years at a glance</h2>
+      <div id="dChart"></div>
+      <div class="stats">
+        <div><div class="k">Average contribution</div><div class="v" id="dAvg"></div></div>
+        <div><div class="k">Contributed above need</div><div class="v" id="dLeft"></div></div>
+        <div><div class="k">Extra tax paid on uncovered costs</div><div class="v" id="dTax"></div></div>
+      </div>
+      <p class="muted" id="dNote"></p>
+    </div>
+  </section>
+</div>
+
+<!-- MODALS -->
+<div class="overlay hidden" id="mIncident"><div class="modal" role="dialog" aria-labelledby="mIncT">
+  <div class="bar" id="mIncT">Unfortunate Event</div>
+  <div class="body incident"><img src="img/incident.svg" alt=""><div id="incText"></div></div>
+  <div class="foot"><button type="button" id="incOk">Understandable!</button></div>
+</div></div>
+
+<div class="overlay hidden" id="mTax"><div class="modal" role="dialog" aria-labelledby="mTaxT">
+  <div class="bar" id="mTaxT">Tax Savings Reminder</div>
+  <div class="body"><div class="taximg"><img src="img/tax.svg" alt=""></div>
+    <p id="tax1"></p><p id="tax2"></p></div>
+  <div class="foot"><button type="button" id="taxOk">Good to know!</button></div>
+</div></div>
+
+<div class="overlay hidden" id="mItems"><div class="modal" role="dialog" aria-labelledby="mItemsT">
+  <div class="bar" id="mItemsT">FSA Eligible Items</div>
+  <div class="body">
+    <p id="itemsMsg"></p>
+    <div class="cats">
+      <label class="cat"><div class="h">Personal Care and Hygiene <input type="checkbox" id="cPCH"></div>
+        <ul><li>Feminine care</li><li>Skin care</li><li>Oral care</li><li>Eye care</li><li>Foot care</li><li>Sexual health medications</li><li>Baby and child supplies</li></ul></label>
+      <label class="cat"><div class="h">Health and Wellness <input type="checkbox" id="cHW"></div>
+        <ul><li>Over-the-counter meds</li><li>Digestive health</li><li>Cough, cold, and flu</li><li>Allergy and sinus</li><li>Vitamins</li><li>First aid</li></ul></label>
+      <label class="cat"><div class="h">Specialized Care <input type="checkbox" id="cSC"></div>
+        <ul><li>Home health care devices</li><li>Test kits</li><li>Smoking cessation</li><li>Incontinence supplies (adult pads, etc.)</li></ul></label>
+    </div>
+    <label class="forf"><span>I don't want to buy anything. I understand that my leftover amount will revert back to my employer.</span><input type="checkbox" id="cForf"></label>
+    <div class="err" id="itemsErr"></div>
+  </div>
+  <div class="foot"><button type="button" id="itemsOk">Proceed</button></div>
+</div></div>
+
+<div class="overlay hidden" id="mMsg"><div class="modal" role="dialog" style="max-width:460px">
+  <div class="bar">FSA Experiment</div>
+  <div class="body"><p id="msgText"></p></div>
+  <div class="foot"><button type="button" id="msgOk">OK</button></div>
+</div></div>
+
+<script src="../config.js" onerror="void 0"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const usd = v => "$" + Math.round(Number(v)).toLocaleString("en-US");
+  const STORE = "fsa_game_v1";
+  const cfg = window.NV_CONFIG || {};
+  const DEMO = !cfg.SUPABASE_URL || /YOUR-PROJECT/.test(cfg.SUPABASE_URL) || !cfg.SUPABASE_KEY || /YOUR-/.test(cfg.SUPABASE_KEY);
+
+  // ---------------- Intro text (from the paper's participant directions) ----------------
+  // {min} {max} {limit} {year} {rounds} are filled in from the session settings.
+  const ICON = {
+    piggy: `<svg viewBox="0 0 120 90"><ellipse cx="58" cy="52" rx="38" ry="28" fill="#1f6f78"/><circle cx="92" cy="50" r="10" fill="#1f6f78"/><circle cx="95" cy="49" r="2.5" fill="#fff"/><path d="M40 28 l-6 -14 l16 8z" fill="#1f6f78"/><rect x="40" y="74" width="10" height="12" rx="3" fill="#1f6f78"/><rect x="66" y="74" width="10" height="12" rx="3" fill="#1f6f78"/><rect x="48" y="27" width="22" height="5" rx="2.5" fill="#fff"/><circle cx="59" cy="12" r="9" fill="#e7b416"/></svg>`,
+    care:  `<svg viewBox="0 0 120 90"><rect x="8" y="22" width="34" height="50" rx="6" fill="#1f6f78"/><rect x="16" y="14" width="18" height="10" rx="2" fill="#1f6f78"/><path d="M25 36 v22 M14 47 h22" stroke="#fff" stroke-width="6" stroke-linecap="round"/><circle cx="74" cy="52" r="14" fill="none" stroke="#1f6f78" stroke-width="5"/><circle cx="102" cy="52" r="14" fill="none" stroke="#1f6f78" stroke-width="5"/><path d="M88 52 h0" stroke="#1f6f78" stroke-width="5"/><path d="M84 50 q4 -4 8 0" fill="none" stroke="#1f6f78" stroke-width="4"/></svg>`,
+    cal:   `<svg viewBox="0 0 120 90"><rect x="22" y="14" width="76" height="68" rx="8" fill="#fff" stroke="#1f6f78" stroke-width="5"/><rect x="22" y="14" width="76" height="20" rx="8" fill="#b4441c"/><text x="60" y="66" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="22" fill="#1f6f78">ENROLL</text><path d="M40 8 v14 M80 8 v14" stroke="#1f6f78" stroke-width="5" stroke-linecap="round"/></svg>`,
+    scale: `<svg viewBox="0 0 120 90"><path d="M60 10 v66 M30 80 h60 M18 26 h84" stroke="#1f6f78" stroke-width="5" stroke-linecap="round"/><path d="M18 26 l-12 26 h24z M102 26 l-12 34 h24z" fill="#e6efed" stroke="#1f6f78" stroke-width="4" stroke-linejoin="round"/><text x="18" y="50" text-anchor="middle" font-size="11" font-weight="700" fill="#1f6f78" font-family="Inter,sans-serif">FSA</text><text x="102" y="58" text-anchor="middle" font-size="11" font-weight="700" fill="#b4441c" font-family="Inter,sans-serif">TAX</text></svg>`,
+    lose:  `<svg viewBox="0 0 120 90"><path d="M38 20 q22 -14 44 0 l8 54 q-30 10 -60 0z" fill="#c9a24a"/><text x="60" y="58" text-anchor="middle" font-size="26" font-weight="800" fill="#fff" font-family="Inter,sans-serif">$</text><path d="M86 22 l22 -14 M90 34 l24 -4" stroke="#b4441c" stroke-width="5" stroke-linecap="round"/><text x="104" y="82" text-anchor="middle" font-size="12" font-weight="700" fill="#b4441c" font-family="Inter,sans-serif">Dec 31</text></svg>`,
+    family:`<svg viewBox="0 0 120 90"><g fill="#1f6f78"><circle cx="30" cy="22" r="10"/><rect x="20" y="34" width="20" height="44" rx="8"/><circle cx="58" cy="22" r="10"/><rect x="48" y="34" width="20" height="44" rx="8"/></g><g fill="#c0702a"><circle cx="84" cy="40" r="7"/><rect x="77" y="49" width="14" height="29" rx="6"/><circle cx="104" cy="44" r="6"/><rect x="98" y="52" width="12" height="26" rx="5"/></g></svg>`,
+    clip:  `<svg viewBox="0 0 120 90"><rect x="30" y="8" width="60" height="78" rx="6" fill="#fff" stroke="#1f6f78" stroke-width="4"/><g stroke="#1f6f78" stroke-width="4" stroke-linecap="round" fill="none"><path d="M40 28 l5 5 l9 -10 M40 48 l5 5 l9 -10 M40 68 l5 5 l9 -10"/><path d="M62 30 h18 M62 50 h18 M62 70 h18"/></g></svg>`,
+    go:    `<svg viewBox="0 0 120 90"><circle cx="60" cy="45" r="38" fill="#1f6f78"/><path d="M50 28 l26 17 l-26 17z" fill="#fff"/></svg>`
+  };
+  const TABLE1 = `<table class="t1"><tr><th></th><th>With FSA</th><th>No FSA</th></tr>
+    <tr><td>Annual pay</td><td>$45,000</td><td>$45,000</td></tr>
+    <tr><td>Pre-tax FSA contribution</td><td>−$2,000</td><td>$0</td></tr>
+    <tr><td>Taxable income</td><td>$43,000</td><td>$45,000</td></tr>
+    <tr><td>Federal income and Medicare taxes</td><td>−$10,084</td><td>−$10,553</td></tr>
+    <tr><td>After-tax dollars spent on eligible expenses</td><td>$0</td><td>−$2,000</td></tr>
+    <tr><td>Spendable income</td><td>$32,917</td><td>$32,448</td></tr>
+    <tr><td>Tax savings</td><td>$469</td><td>$0</td></tr></table>`;
+  const SLIDES = [
+    { art: "piggy", text: "<b style='font-size:26px'>Welcome to the FSA Simulation</b>" },
+    { art: "piggy", text: "A flexible spending account (FSA) is an employer-provided benefit that allows employees to contribute money, tax-free, to cover eligible medical expenses not covered by health insurance." },
+    { art: "care",  text: "Eligible expenses include medical and prescription co-pays, dental and vision care, medical devices, and over-the-counter items like allergy medicine, pain relievers, sunscreen, DNA testing, acne creams, feminine hygiene, birth control, and first aid supplies, among others." },
+    { art: "cal",   text: "Employees enroll in an FSA during the annual benefits selection period for the following calendar year, with a maximum contribution of {limit} in {year}." },
+    { art: "scale", text: "By using pre-tax dollars for eligible expenses, employees lower their taxable income, which saves them money." },
+    { art: null,    text: "For example, an employee earning $45,000 who contributes $2,000 to an FSA account would save $469 in taxes.", extra: TABLE1 },
+    { art: "lose",  text: "FSA funds are “use it or lose it,” so employees should plan for predicted medical expenses. Of course, it is impossible to perfectly predict future medical costs. FSA funds cannot be rolled over to the next calendar year, and any funds not used by year-end are forfeited back to the employer." },
+    { art: "family",text: "In this simulation, imagine you are a 30-something-year-old employee with a spouse and two children. You will simulate {rounds} consecutive trials of making FSA contributions. You can contribute between {min} and {max} in each trial." },
+    { art: "clip",  text: "After you enter your chosen contribution, the simulation will give you the total cost of eligible medical expenses you actually incurred during that period. You will then move to the next period. The simulation will end after you complete {rounds} periods. You may be given additional directions and information while the simulation progresses." },
+    { art: "go",    text: "<b>You may begin when you are ready.</b>" }
+  ];
+
+  // ---------------- API: Supabase RPC, or a local demo engine ----------------
+  async function rpc(fn, args) {
+    if (DEMO) return demo[fn](args);
+    const res = await fetch(cfg.SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/rpc/" + fn, {
+      method: "POST",
+      headers: Object.assign({ "Content-Type": "application/json", apikey: cfg.SUPABASE_KEY },
+                             /^eyJ/.test(cfg.SUPABASE_KEY) ? { Authorization: "Bearer " + cfg.SUPABASE_KEY } : {}),
+      body: JSON.stringify(args)
+    });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) throw new Error((body && (body.message || body.hint)) || "Network error. Please try again.");
+    return body;
+  }
+
+  // Mirrors fsa_schema.sql with the default session settings
+  const demo = (() => {
+    const q = new URLSearchParams(location.search);
+    const S = { title: "Demo session", needs: [1200,1100,1400,1300,1600,1400,1600,1000,1200,1300,1200,1000,1900,1500,1100],
+      contrib_min: 1000, contrib_max: 2000, tax_rate: 0.36, incident_round: 5, incident_need: 1900, annual_limit: 3300, limit_year: 2025,
+      incident_text: "Uh-oh! Your son fell from his bicycle and shattered your wallet! Your FSA spending jumped to {need}!",
+      show_intro: q.get("intro") !== "0", show_debrief: true, is_open: true };
+    let p = null;
+    const need = r => p.incident && r === S.incident_round ? S.incident_need : S.needs[r - 1];
+    const state = () => ({ ...S, ...p, n_rounds: S.needs.length, history: p.history.map(h => ({ ...h })) });
+    return {
+      fsa_join: a => { const k = q.get("k") || (Math.random() < .5 ? "astute" : "uninformed"), i = q.get("i") ? q.get("i") === "yes" : true;
+        p = { participant_id: "demo", token: "demo", nickname: a.p_nickname, session_code: (a.p_code || "DEMO").toUpperCase(),
+              knowledge: k, incident: i, intro_done: false, history: [] }; return state(); },
+      fsa_resume: () => { if (!p) throw new Error("Saved game not found"); return state(); },
+      fsa_intro_done: () => { p.intro_done = true; return null; },
+      fsa_submit: a => { const r = p.history.length + 1, n = need(r), x = a.p_amount;
+        if (x < S.contrib_min || x > S.contrib_max) throw new Error(`Contribution must be a whole-dollar amount between $${S.contrib_min} and $${S.contrib_max}`);
+        const h = { round: r, contribution: x, need: n, over_amt: Math.max(x - n, 0), under_amt: Math.max(n - x, 0) };
+        h.tax_missed = Math.round(h.under_amt * S.tax_rate * 100) / 100; h.items_pending = p.knowledge === "astute" && h.over_amt > 0; p.history.push(h);
+        const pop = p.incident && r === S.incident_round;
+        return { ...h, incident_popup: pop, incident_text: pop ? S.incident_text.replace("{need}", usd(n)) : null, done: r === S.needs.length }; },
+      fsa_record_items: a => { if (!(a.p_pch || a.p_hw || a.p_sc || a.p_forfeit)) throw new Error("Choose at least one category, or tick the box to forfeit");
+        p.history[a.p_round - 1].items_pending = false; return { ok: true }; }
+    };
+  })();
+
+  // ---------------- State ----------------
+  let G = null, busy = false, slideIx = 0, introStart = 0, roundStart = 0, itemsStart = 0, pendingRound = null;
+  const VIEWS = ["vJoin", "vIntro", "vPlay", "vDone"];
+  function show(view) { VIEWS.forEach(v => $(v).classList.toggle("hidden", v !== view)); window.scrollTo(0, 0); }
+  function save() { if (!DEMO && G) localStorage.setItem(STORE, JSON.stringify({ id: G.participant_id, token: G.token, code: G.session_code })); }
+  const fill = s => s.replace(/\{min\}/g, usd(G.contrib_min)).replace(/\{max\}/g, usd(G.contrib_max))
+                     .replace(/\{limit\}/g, usd(G.annual_limit)).replace(/\{year\}/g, G.limit_year).replace(/\{rounds\}/g, G.n_rounds);
+
+  // modal helper: shows one dialog and resolves when its button is clicked
+  function modal(id, okId, before) {
+    return new Promise(res => { before && before(); $(id).classList.remove("hidden");
+      setTimeout(() => $(okId).focus(), 30);
+      $(okId).onclick = () => { $(id).classList.add("hidden"); res(); }; });
+  }
+
+  // ---------------- Intro ----------------
+  function renderSlide() {
+    const s = SLIDES[slideIx];
+    $("slide").innerHTML = (s.art ? `<div class="art">${ICON[s.art]}</div>` : "") + `<div class="txt">${fill(s.text)}</div>` + (s.extra || "");
+    $("dots").innerHTML = SLIDES.map((_, i) => `<i class="${i === slideIx ? "on" : ""}"></i>`).join("");
+    $("backBtn").style.visibility = slideIx ? "visible" : "hidden";
+    $("fwdBtn").textContent = slideIx === SLIDES.length - 1 ? "Begin the simulation" : "Next";
+  }
+  $("backBtn").onclick = () => { if (slideIx) { slideIx--; renderSlide(); } };
+  $("fwdBtn").onclick = async () => {
+    if (slideIx < SLIDES.length - 1) { slideIx++; renderSlide(); return; }
+    try { await rpc("fsa_intro_done", { p_participant: G.participant_id, p_token: G.token, p_ms: Math.round(performance.now() - introStart) }); } catch (_) {}
+    G.intro_done = true; startYear();
+  };
+  function startIntro() { slideIx = 0; introStart = performance.now(); renderSlide(); show("vIntro"); }
+
+  // ---------------- Decision screen ----------------
+  // The Excel form showed a fixed bar chart of past needs across the contribution range (roughly flat = uniform)
+  function needGraph() {
+    const H = [0.98, 0.96, 0.98, 0.98, 0.96, 0.98, 0.93, 0.98, 0.95, 0.94, 0.91], n = H.length;
+    const W = 560, h = 120, bw = W / n, ticks = H.map((_, i) => Math.round(G.contrib_min + i * (G.contrib_max - G.contrib_min) / (n - 1)));
+    return `<svg viewBox="0 0 ${W} ${h + 22}" style="width:100%;height:auto" role="img" aria-label="Past needs were spread evenly between ${usd(G.contrib_min)} and ${usd(G.contrib_max)}">
+      ${[0.25, 0.5, 0.75, 1].map(f => `<line x1="0" x2="${W}" y1="${h - f * h * 0.95}" y2="${h - f * h * 0.95}" stroke="#e3e8e6"/>`).join("")}
+      ${H.map((v, i) => `<rect x="${i * bw + bw * 0.18}" y="${h - v * h * 0.95}" width="${bw * 0.64}" height="${v * h * 0.95}" fill="#5b9bd5"/>`).join("")}
+      ${ticks.map((t, i) => `<text x="${i * bw + bw / 2}" y="${h + 16}" font-size="12" text-anchor="middle" fill="#444" font-family="Inter,sans-serif">${t}</text>`).join("")}
+    </svg>`;
+  }
+
+  function startYear() {
+    const last = G.history[G.history.length - 1];
+    if (last && last.items_pending) return showItems(last);           // resumed mid-way through the leftover-funds form
+    const r = G.history.length + 1;
+    if (r > G.n_rounds) return finish();
+    $("pYear").textContent = r;
+    $("pNeed").textContent = last ? last.need : 0;
+    $("pLast").textContent = last ? last.contribution : 0;
+    $("pBar").style.width = (100 * G.history.length / G.n_rounds) + "%";
+    $("amt").value = ""; $("amtErr").textContent = "";
+    $("amtHint").textContent = `(${usd(G.contrib_min)}–${usd(G.contrib_max)})`;
+    $("needGraph").innerHTML = needGraph();
+    show("vPlay"); roundStart = performance.now();
+    setTimeout(() => $("amt").focus(), 50);
+  }
+
+  $("amtForm").addEventListener("submit", async e => {
+    e.preventDefault(); if (busy) return;
+    const raw = $("amt").value.replace(/[$,\s]/g, ""), x = Number(raw);
+    if (raw === "" || !Number.isInteger(x) || x < G.contrib_min || x > G.contrib_max) {
+      $("amtErr").textContent = `Please enter a whole-dollar amount from ${usd(G.contrib_min)} to ${usd(G.contrib_max)}.`; $("amt").focus(); return; }
+    busy = true; $("contBtn").disabled = true; $("amtErr").textContent = "";
+    try {
+      const r = await rpc("fsa_submit", { p_participant: G.participant_id, p_token: G.token, p_round: G.history.length + 1,
+                                          p_amount: x, p_response_ms: Math.round(performance.now() - roundStart) });
+      G.history.push({ round: r.round, contribution: r.contribution, need: r.need, over_amt: r.over_amt, under_amt: r.under_amt,
+                       tax_missed: r.tax_missed, items_pending: r.items_pending });
+      // 1) the unexpected event, 2) feedback for the condition (same order as the VBA)
+      if (r.incident_popup) await modal("mIncident", "incOk", () => $("incText").textContent = r.incident_text);
+      if (G.knowledge === "astute") {
+        if (r.over_amt > 0) { busy = false; $("contBtn").disabled = false; return showItems(G.history[G.history.length - 1]); }
+        if (r.under_amt > 0) await modal("mTax", "taxOk", () => {
+          $("tax1").textContent = `You undercontributed to your account by ${usd(r.under_amt)}.`;
+          $("tax2").textContent = `In your tax bracket, you could have avoided paying ${usd(r.tax_missed)} in additional taxes if you had contributed enough!`; });
+      } else {
+        if (r.over_amt > 0) await modal("mMsg", "msgOk", () => $("msgText").textContent = `Your FSA eligible healthcare spending was ${usd(r.over_amt)} lower than your contribution.`);
+        if (r.under_amt > 0) await modal("mMsg", "msgOk", () => $("msgText").textContent = `Your FSA eligible healthcare spending was ${usd(r.under_amt)} higher than your contribution.`);
+      }
+      startYear();
+    } catch (err) {
+      $("amtErr").textContent = err.message;
+      if (/sync|completed|leftover/.test(err.message) && !DEMO) {
+        try { G = await rpc("fsa_resume", { p_participant: G.participant_id, p_token: G.token }); startYear(); } catch (_) {} }
+    }
+    busy = false; $("contBtn").disabled = false;
+  });
+
+  // ---------------- FSA Eligible Items (Astute, over-contributed) ----------------
+  function showItems(h) {
+    pendingRound = h.round; itemsStart = performance.now();
+    ["cPCH", "cHW", "cSC", "cForf"].forEach(id => $(id).checked = false); $("itemsErr").textContent = "";
+    $("itemsMsg").textContent = `It is the end of the year and you have some extra money left! You have ${usd(h.over_amt)} unused. Please choose one or more of the following categories to spend your money on, or forfeit the remaining amount.`;
+    $("mItems").classList.remove("hidden");
+  }
+  // forfeiting and buying are alternatives
+  ["cPCH", "cHW", "cSC"].forEach(id => $(id).onchange = () => { if ($(id).checked) $("cForf").checked = false; });
+  $("cForf").onchange = () => { if ($("cForf").checked) ["cPCH", "cHW", "cSC"].forEach(id => $(id).checked = false); };
+  $("itemsOk").onclick = async () => {
+    if (busy) return;
+    const pick = { p_pch: $("cPCH").checked, p_hw: $("cHW").checked, p_sc: $("cSC").checked, p_forfeit: $("cForf").checked };
+    if (!(pick.p_pch || pick.p_hw || pick.p_sc || pick.p_forfeit)) { $("itemsErr").textContent = "Choose at least one category, or tick the box to forfeit."; return; }
+    busy = true; $("itemsOk").disabled = true;
+    try {
+      await rpc("fsa_record_items", { p_participant: G.participant_id, p_token: G.token, p_round: pendingRound, ...pick,
+                                      p_ms: Math.round(performance.now() - itemsStart) });
+      G.history[pendingRound - 1].items_pending = false; $("mItems").classList.add("hidden"); busy = false; $("itemsOk").disabled = false;
+      startYear();
+    } catch (err) { $("itemsErr").textContent = err.message; busy = false; $("itemsOk").disabled = false; }
+  };
+
+  // ---------------- End ----------------
+  function finish() {
+    show("vDone");
+    if (!G.show_debrief) return;
+    $("debrief").classList.remove("hidden");
+    const H = G.history, n = H.length, mean = H.reduce((t, h) => t + h.contribution, 0) / n;
+    $("dAvg").textContent = usd(mean);
+    $("dLeft").textContent = usd(H.reduce((t, h) => t + h.over_amt, 0));
+    $("dTax").textContent = usd(H.reduce((t, h) => t + Number(h.tax_missed), 0));
+    const qs = Math.round(G.contrib_min + G.tax_rate * (G.contrib_max - G.contrib_min));
+    $("dNote").innerHTML = `Newsvendor view: each extra dollar contributed saves ${Math.round(G.tax_rate * 100)}¢ in tax if you spend it (underage cost) but loses $1 if it goes unspent (overage cost). With needs spread evenly between ${usd(G.contrib_min)} and ${usd(G.contrib_max)}, the critical ratio is ${G.tax_rate} and the expected-value-maximising contribution is about <b>${usd(qs)}</b>.`;
+    // contribution vs need chart
+    const W = 560, Ht = 200, pad = 34, lo = Math.min(G.contrib_min, ...H.map(h => h.need)) - 100, hi = Math.max(G.contrib_max, ...H.map(h => h.need)) + 100;
+    const x = i => pad + i * (W - pad - 10) / Math.max(n - 1, 1), y = v => Ht - 24 - (v - lo) / (hi - lo) * (Ht - 40);
+    const line = k => H.map((h, i) => `${i ? "L" : "M"}${x(i)},${y(h[k])}`).join("");
+    $("dChart").innerHTML = `<svg viewBox="0 0 ${W} ${Ht}" style="width:100%;height:auto">
+      ${[lo + 100, (lo + hi) / 2, hi - 100].map(v => `<line x1="${pad}" x2="${W - 10}" y1="${y(v)}" y2="${y(v)}" stroke="#e3e8e6"/><text x="${pad - 4}" y="${y(v) + 4}" font-size="10" text-anchor="end" fill="#666">${Math.round(v)}</text>`).join("")}
+      <line x1="${pad}" x2="${W - 10}" y1="${y(qs)}" y2="${y(qs)}" stroke="#b4441c" stroke-dasharray="5 4"/>
+      <path d="${line("need")}" fill="none" stroke="#999" stroke-width="2"/>${H.map((h, i) => `<circle cx="${x(i)}" cy="${y(h.need)}" r="3" fill="#999"/>`).join("")}
+      <path d="${line("contribution")}" fill="none" stroke="#1f6f78" stroke-width="3"/>${H.map((h, i) => `<circle cx="${x(i)}" cy="${y(h.contribution)}" r="3.5" fill="#1f6f78"/>`).join("")}
+      ${H.map((h, i) => `<text x="${x(i)}" y="${Ht - 6}" font-size="10" text-anchor="middle" fill="#666">${h.round}</text>`).join("")}
+    </svg><div class="muted" style="font-size:12px"><span style="color:#1f6f78">●</span> Your contribution &nbsp; <span style="color:#999">●</span> Actual need &nbsp; <span style="color:#b4441c">- -</span> Newsvendor benchmark</div>`;
+  }
+
+  // ---------------- Join & boot ----------------
+  $("joinForm").addEventListener("submit", async e => {
+    e.preventDefault(); if (busy) return; busy = true; $("joinBtn").disabled = true; $("joinErr").textContent = "";
+    try {
+      G = await rpc("fsa_join", { p_code: $("code").value.trim(), p_nickname: $("nick").value.trim(),
+                                  p_student_ref: $("sref").value.trim() || null, p_user_agent: navigator.userAgent });
+      save(); route();
+    } catch (err) { $("joinErr").textContent = err.message; }
+    busy = false; $("joinBtn").disabled = false;
+  });
+
+  function route() {
+    $("mastSub").textContent = "Session " + G.session_code;
+    if (G.history.length === 0 && !G.intro_done && G.show_intro) return startIntro();
+    startYear();
+  }
+
+  (async () => {
+    if (DEMO) $("demoBanner").classList.remove("hidden");
+    const urlCode = new URLSearchParams(location.search).get("code");
+    if (urlCode) $("code").value = urlCode.toUpperCase();
+    const saved = DEMO ? null : JSON.parse(localStorage.getItem(STORE) || "null");
+    if (saved && (!urlCode || urlCode.toUpperCase() === saved.code)) {
+      try { G = await rpc("fsa_resume", { p_participant: saved.id, p_token: saved.token }); return route(); }
+      catch (_) { localStorage.removeItem(STORE); }
+    }
+    show("vJoin");
+  })();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FSA Simulation · Instructor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="../vendor/chart.umd.min.js"></script>
+<style>
+  :root{ --paper:#f2f5f4; --card:#fff; --ink:#18211f; --muted:#5f6b68; --rule:#d5dedb;
+         --accent:#1f6f78; --soft:#e6efed; --bad:#a33a2a; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.5 Inter,system-ui,sans-serif}
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:3px double var(--ink);background:var(--card)}
+  header h1{font-family:Fraunces,Georgia,serif;font-size:22px;margin:0}
+  header .who{color:var(--muted);font-size:13px}
+  main{display:grid;grid-template-columns:330px 1fr;gap:18px;padding:18px 24px;max-width:1440px;margin:0 auto}
+  @media (max-width:900px){ main{grid-template-columns:1fr} }
+  .card{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:16px;margin-bottom:16px}
+  h2{font-family:Fraunces,Georgia,serif;font-size:18px;margin:0 0 10px}
+  h3{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:0 0 8px}
+  label{display:block;font-weight:600;font-size:12px;margin:9px 0 3px;color:var(--muted)}
+  input,select,textarea{width:100%;font:inherit;padding:8px;border:1px solid var(--rule);border-radius:6px;background:#fff}
+  textarea{resize:vertical;min-height:54px}
+  fieldset{border:1px solid var(--rule);border-radius:8px;padding:4px 10px 10px;margin:12px 0 0}
+  legend{font-size:12px;font-weight:700;color:var(--ink);padding:0 4px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  button{font:inherit;font-weight:600;border:0;border-radius:6px;padding:9px 14px;cursor:pointer;background:var(--accent);color:#fff}
+  button.ghost{background:transparent;color:var(--ink);border:1px solid var(--rule)}
+  button.danger{background:transparent;color:var(--bad);border:1px solid var(--bad)}
+  button.sm{padding:5px 10px;font-size:12px}
+  .full{width:100%;margin-top:12px}
+  .sess{padding:10px;border-radius:8px;cursor:pointer;border:1px solid transparent;margin-bottom:4px}
+  .sess:hover{background:var(--soft)} .sess.active{background:var(--soft);border-color:var(--rule)}
+  .sess .code{font-weight:700;font-family:ui-monospace,Menlo,monospace}
+  .pill{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;margin-left:6px;vertical-align:1px}
+  .pill.open{background:#dcefdc;color:#2f6b3a} .pill.closed{background:#eee;color:#666}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+  .kpi{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:12px}
+  .kpi .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+  .kpi .v{font-family:Fraunces,Georgia,serif;font-size:28px;font-weight:600}
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+  .toolbar .link{flex:1;min-width:240px;font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--soft);padding:8px 10px;border-radius:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+  th,td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--rule);white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  th{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;cursor:pointer;user-select:none}
+  .scroll{overflow:auto;max-height:440px}
+  #partTable td:nth-child(-n+4),#partTable th:nth-child(-n+4){text-align:left}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+  .muted{color:var(--muted)} .err{color:var(--bad);margin-top:8px}
+  .hidden{display:none!important}
+  .demo{background:#fff4c2;border:1px solid #e4cf6a;color:#5b4b00;border-radius:8px;padding:8px 12px;margin:12px 24px 0}
+  .login{max-width:380px;margin:60px auto}
+  .chartbox{position:relative;height:340px}
+  .note{background:var(--soft);border-radius:8px;padding:12px;font-size:13px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px} @media (max-width:1100px){.grid2{grid-template-columns:1fr}}
+  .chk{display:flex;gap:6px;align-items:center;font-weight:500;color:var(--ink);margin:8px 0 0}
+  .chk input{width:auto}
+  .settings{font-size:12.5px;color:var(--muted);margin:-6px 0 12px}
+</style>
+</head>
+<body>
+<header>
+  <h1>FSA Simulation · Instructor</h1>
+  <div><a href="../admin.html" class="muted" style="margin-right:12px">Newsvendor game</a><span class="who" id="who"></span> <button class="ghost sm hidden" id="logoutBtn">Sign out</button></div>
+</header>
+<div id="demoBanner" class="demo hidden">Demo mode: showing a simulated class of 32 students. Add your Supabase keys in <code>config.js</code> to use real data.</div>
+
+<section id="vLogin" class="login card hidden">
+  <h2>Instructor sign in</h2>
+  <form id="loginForm">
+    <label>Email</label><input id="email" type="email" required autocomplete="username">
+    <label>Password</label><input id="pw" type="password" required autocomplete="current-password">
+    <button class="full" type="submit">Sign in</button>
+    <div class="err" id="loginErr"></div>
+  </form>
+</section>
+
+<main id="vApp" class="hidden">
+  <aside>
+    <div class="card">
+      <h2>Sessions</h2>
+      <div id="sessList"><span class="muted">Loading…</span></div>
+    </div>
+    <div class="card">
+      <h2>New session</h2>
+      <form id="newForm">
+        <label>Title</label><input name="title" value="FSA simulation">
+        <label>Code</label><input name="code" required pattern="[A-Za-z0-9]{3,12}" style="text-transform:uppercase">
+
+        <fieldset><legend>Design</legend>
+          <label>Knowledge</label>
+          <select name="knowledge_mode">
+            <option value="random">Astute and Uninformed (balanced random)</option>
+            <option value="astute">Astute only</option>
+            <option value="uninformed">Uninformed only</option>
+          </select>
+          <label>Incident</label>
+          <select name="incident_mode">
+            <option value="yes">Everyone gets the incident (as in the paper)</option>
+            <option value="random">Incident and no incident (balanced random)</option>
+            <option value="no">No incident</option>
+          </select>
+        </fieldset>
+
+        <fieldset><legend>Money</legend>
+          <div class="row2">
+            <div><label>Min contribution ($)</label><input name="contrib_min" type="number" min="0" step="1" value="1000"></div>
+            <div><label>Max contribution ($)</label><input name="contrib_max" type="number" min="1" step="1" value="2000"></div>
+          </div>
+          <label>Marginal tax rate (%)</label><input name="tax_pct" type="number" min="1" max="99" step="0.1" value="36">
+          <div class="row2">
+            <div><label>Legal FSA limit ($, intro text)</label><input name="annual_limit" type="number" min="0" step="1" value="3300"></div>
+            <div><label>Limit year</label><input name="limit_year" type="number" min="2000" max="2100" step="1" value="2025"></div>
+          </div>
+        </fieldset>
+
+        <fieldset><legend>Yearly need (FSA-eligible spending)</legend>
+          <label>One amount per year, comma-separated</label>
+          <textarea name="needs">1200, 1100, 1400, 1300, 1600, 1400, 1600, 1000, 1200, 1300, 1200, 1000, 1900, 1500, 1100</textarea>
+          <div style="display:flex;gap:6px;margin-top:6px">
+            <button type="button" class="ghost sm" id="needsPaper">Paper's sequence</button>
+            <button type="button" class="ghost sm" id="needsRandom">Random (uniform, $100 steps)</button>
+          </div>
+          <div class="row2">
+            <div><label>Incident year</label><input name="incident_round" type="number" min="1" step="1" value="5"></div>
+            <div><label>Need in that year with incident ($)</label><input name="incident_need" type="number" min="0" step="1" value="1900"></div>
+          </div>
+          <label>Incident message (<code>{need}</code> = the amount)</label>
+          <textarea name="incident_text">Uh-oh! Your son fell from his bicycle and shattered your wallet! Your FSA spending jumped to {need}!</textarea>
+        </fieldset>
+
+        <label class="chk"><input name="show_intro" type="checkbox" checked> Show the intro screens</label>
+        <label class="chk"><input name="show_debrief" type="checkbox" checked> Show students a summary at the end</label>
+        <div class="muted" id="preview" style="margin-top:8px"></div>
+        <button class="full" type="submit">Create session</button>
+        <div class="err" id="newErr"></div>
+      </form>
+    </div>
+  </aside>
+
+  <section id="detail">
+    <div class="card" id="emptyDetail"><span class="muted">Create or select a session.</span></div>
+    <div id="sessDetail" class="hidden">
+      <div class="toolbar">
+        <h2 style="margin:0" id="dTitle"></h2>
+        <div class="link" id="dLink" title="Student link"></div>
+        <button class="ghost sm" id="copyBtn">Copy link</button>
+        <button class="ghost sm" id="toggleOpen"></button>
+        <label class="chk" style="margin:0"><input type="checkbox" id="auto" checked> Live (10s)</label>
+        <button class="ghost sm" id="refreshBtn">Refresh</button>
+      </div>
+      <div class="settings" id="dSettings"></div>
+      <div class="kpis">
+        <div class="kpi"><div class="k">Joined</div><div class="v" id="kJoined">0</div></div>
+        <div class="kpi"><div class="k">Finished</div><div class="v" id="kDone">0</div></div>
+        <div class="kpi"><div class="k">Decisions</div><div class="v" id="kDec">0</div></div>
+        <div class="kpi"><div class="k">Median year reached</div><div class="v" id="kRound">–</div></div>
+      </div>
+
+      <div class="card">
+        <h3>Average contribution by year</h3>
+        <div class="chartbox"><canvas id="chart"></canvas></div>
+        <div class="muted" style="margin-top:6px">Solid lines: mean contribution per group. Grey dots: need in each year (no-incident value; the incident groups' need is shown as a red dot). Dashed: newsvendor benchmark Q* = min + t·(max − min).</div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>Summary statistics (Table 2 layout)</h3>
+          <div style="overflow:auto"><table id="cellTable"></table></div>
+          <div class="note" id="note" style="margin-top:12px"></div>
+        </div>
+        <div class="card">
+          <h3>What Astute participants did with leftover funds</h3>
+          <div class="chartbox" style="height:260px"><canvas id="items"></canvas></div>
+          <div class="muted" style="margin-top:6px">Share of leftover-funds forms where each box was ticked (several categories can be ticked at once).</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap">
+          <h3 style="margin:0">Students</h3>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="sm" id="csvPaper" title="Same columns as datasetforpaper.csv, so the R scripts run unchanged">Export paper-format CSV</button>
+            <button class="ghost sm" id="csvFull">Export all decisions CSV</button>
+            <button class="ghost sm" id="csvStudents">Export students CSV</button>
+          </div>
+        </div>
+        <div class="scroll"><table id="partTable"></table></div>
+      </div>
+
+      <div style="text-align:right"><button class="danger sm" id="deleteBtn">Delete session and its data</button></div>
+    </div>
+  </section>
+</main>
+
+<script src="../config.js" onerror="void 0"></script>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = (v, d = 0) => v == null || !isFinite(v) ? "–" : Number(v).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+const usd = v => v == null || !isFinite(v) ? "–" : "$" + fmt(v, 0);
+const cfg = window.NV_CONFIG || {};
+const DEMO = !cfg.SUPABASE_URL || /YOUR-PROJECT/.test(cfg.SUPABASE_URL) || !cfg.SUPABASE_KEY || /YOUR-/.test(cfg.SUPABASE_KEY);
+const PAPER_NEEDS = [1200,1100,1400,1300,1600,1400,1600,1000,1200,1300,1200,1000,1900,1500,1100];
+// Group numbers as in the paper's dataset
+const GROUPS = { 1: { label: "Astute · incident", color: "#1f6f78" }, 2: { label: "Uninformed · incident", color: "#c0702a" },
+                 3: { label: "Astute · no incident", color: "#6aaab1", dash: [7, 4] }, 4: { label: "Uninformed · no incident", color: "#e2a86b", dash: [7, 4] } };
+const mean = a => a.length ? a.reduce((t, x) => t + x, 0) / a.length : null;
+const sd = a => { if (a.length < 2) return null; const m = mean(a); return Math.sqrt(a.reduce((t, x) => t + (x - m) ** 2, 0) / (a.length - 1)); };
+const qstar = s => Math.round(s.contrib_min + Number(s.tax_rate) * (s.contrib_max - s.contrib_min));
+const needOf = (s, r, inc) => inc && r === s.incident_round ? s.incident_need : s.needs[r - 1];
+
+// ---------- data layer: Supabase or demo ----------
+let sb = null;
+const api = DEMO ? demoApi() : supabaseApi();
+
+function supabaseApi() {
+  return {
+    async init() {
+      await new Promise((ok, bad) => { const s = document.createElement("script");
+        s.src = "../vendor/supabase.js"; s.onload = ok; s.onerror = bad; document.head.appendChild(s); });
+      sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
+      const { data } = await sb.auth.getSession(); return data.session?.user || null;
+    },
+    async login(email, pw) { const { data, error } = await sb.auth.signInWithPassword({ email, password: pw }); if (error) throw error; return data.user; },
+    async logout() { await sb.auth.signOut(); },
+    async sessions() { const { data, error } = await sb.from("fsa_sessions").select("*").order("created_at", { ascending: false });
+      if (error) throw new Error(/fsa_sessions/.test(error.message) ? "The FSA tables are missing. Run fsa/fsa_schema.sql in the Supabase SQL Editor." : error.message); return data; },
+    async create(row) { const { data, error } = await sb.from("fsa_sessions").insert(row).select().single(); if (error) throw error; return data; },
+    async setOpen(id, open) { const { error } = await sb.from("fsa_sessions").update({ is_open: open }).eq("id", id); if (error) throw error; },
+    async remove(id) { const { error } = await sb.from("fsa_sessions").delete().eq("id", id); if (error) throw error; },
+    async load(id) {
+      const parts = await sb.from("fsa_participants").select("id,nickname,student_ref,knowledge,incident,grp,joined_at,intro_ms,finished_at").eq("session_id", id).order("joined_at");
+      if (parts.error) throw parts.error;
+      let decs = [], from = 0;   // Supabase returns at most 1000 rows per request
+      for (;;) {
+        const r = await sb.from("fsa_decisions").select("participant_id,round,contribution,need,over_amt,under_amt,tax_missed,pch,hw,sc,forfeit,response_ms,items_ms,created_at")
+          .eq("session_id", id).order("id").range(from, from + 999);
+        if (r.error) throw r.error; decs = decs.concat(r.data); if (r.data.length < 1000) break; from += 1000;
+      }
+      return { participants: parts.data, decisions: decs };
+    }
+  };
+}
+
+function demoApi() {
+  // Simulated class roughly reproducing the paper's effects (Astute +90, after incident +105)
+  const S = { id: "demo1", code: "DEMO", title: "Simulated class", needs: PAPER_NEEDS, contrib_min: 1000, contrib_max: 2000, tax_rate: 0.36,
+    incident_round: 5, incident_need: 1900, incident_text: "", knowledge_mode: "random", incident_mode: "random", annual_limit: 3300, limit_year: 2025,
+    show_intro: true, show_debrief: true, is_open: true, created_at: new Date().toISOString() };
+  const participants = [], decisions = [], rnd = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
+  for (let i = 0; i < 32; i++) {
+    const grp = (i % 4) + 1, ast = grp === 1 || grp === 3, inc = grp <= 2, id = "p" + i, base = 1350 + rnd() * 150, years = i < 29 ? 15 : 6 + i % 7;
+    participants.push({ id, nickname: "Student " + (i + 1), student_ref: "S" + (1000 + i), knowledge: ast ? "astute" : "uninformed", incident: inc, grp,
+                        joined_at: S.created_at, intro_ms: 60000, finished_at: years === 15 ? S.created_at : null });
+    for (let r = 1; r <= years; r++) {
+      let c = base + (ast ? 90 : 0) + (inc && r > 5 ? 105 : 0) + rnd() * 180;
+      c = Math.max(1000, Math.min(2000, Math.round(c / 50) * 50));
+      const n = needOf(S, r, inc), over = Math.max(c - n, 0), under = Math.max(n - c, 0), pick = Math.random();
+      decisions.push({ participant_id: id, round: r, contribution: c, need: n, over_amt: over, under_amt: under, tax_missed: Math.round(under * 36) / 100,
+        pch: ast && over ? pick < .4 : null, hw: ast && over ? pick > .25 && pick < .85 : null, sc: ast && over ? pick > .7 && pick < .9 : null, forfeit: ast && over ? pick >= .9 : null,
+        response_ms: 3000 + Math.round(Math.random() * 9000), items_ms: null, created_at: S.created_at });
+    }
+  }
+  let sessions = [S];
+  return {
+    async init() { return { email: "demo@example.edu" }; }, async login() { return { email: "demo@example.edu" }; }, async logout() {},
+    async sessions() { return sessions; },
+    async create(row) { const s = { ...S, ...row, id: "s" + Date.now(), created_at: new Date().toISOString(), is_open: true }; sessions = [s, ...sessions]; return s; },
+    async setOpen(id, open) { sessions.find(s => s.id === id).is_open = open; },
+    async remove(id) { sessions = sessions.filter(s => s.id !== id); },
+    async load(id) { return id === "demo1" ? { participants, decisions } : { participants: [], decisions: [] }; }
+  };
+}
+
+// ---------- analysis ----------
+function analyse(s, data) {
+  const byP = new Map(data.participants.map((p, i) => [p.id, { ...p, num: i + 1, decs: [] }]));
+  data.decisions.forEach(d => byP.get(d.participant_id)?.decs.push(d));
+  const students = [...byP.values()].map(p => {
+    const ds = p.decs.sort((a, b) => a.round - b.round), c = ds.map(d => d.contribution);
+    return { ...p, years: ds.length, mean_c: mean(c), sd_c: sd(c),
+      pre: mean(ds.filter(d => d.round <= s.incident_round).map(d => d.contribution)),
+      post: mean(ds.filter(d => d.round > s.incident_round).map(d => d.contribution)),
+      left: ds.reduce((t, d) => t + d.over_amt, 0), tax: ds.reduce((t, d) => t + Number(d.tax_missed), 0),
+      rt: mean(ds.map(d => d.response_ms).filter(x => x != null)) };
+  });
+  const grpOf = id => byP.get(id)?.grp;
+  const n = s.needs.length;
+  const byYear = {};
+  [1, 2, 3, 4].forEach(g => { byYear[g] = Array.from({ length: n }, (_, i) => mean(data.decisions.filter(d => d.round === i + 1 && grpOf(d.participant_id) === g).map(d => d.contribution))); });
+  const cells = [1, 2, 3, 4].map(g => {
+    const ds = data.decisions.filter(d => grpOf(d.participant_id) === g); if (!ds.length) return null;
+    const pre = ds.filter(d => d.round <= s.incident_round).map(d => d.contribution), post = ds.filter(d => d.round > s.incident_round).map(d => d.contribution);
+    return { g, people: students.filter(p => p.grp === g && p.years).length, pre: [mean(pre), sd(pre), pre.length], post: [mean(post), sd(post), post.length] };
+  }).filter(Boolean);
+  const forms = data.decisions.filter(d => d.pch != null || d.forfeit != null);
+  const items = ["pch", "hw", "sc", "forfeit"].map(k => forms.length ? 100 * forms.filter(d => d[k]).length / forms.length : 0);
+  return { students, byYear, cells, items, nForms: forms.length };
+}
+
+// ---------- rendering ----------
+let sessions = [], current = null, lastData = null, charts = {}, timer = null, sortKey = "num", sortDir = 1;
+
+function designLabel(s) {
+  const k = { random: "Astute + Uninformed", astute: "Astute only", uninformed: "Uninformed only" }[s.knowledge_mode];
+  const i = { random: "incident ± ", yes: "incident", no: "no incident" }[s.incident_mode];
+  return `${k} · ${i}`;
+}
+function renderList() {
+  $("sessList").innerHTML = sessions.length ? sessions.map(s =>
+    `<div class="sess ${current?.id === s.id ? "active" : ""}" data-id="${s.id}">
+       <span class="code">${esc(s.code)}</span><span class="pill ${s.is_open ? "open" : "closed"}">${s.is_open ? "open" : "closed"}</span>
+       <div class="muted">${esc(s.title)} · ${designLabel(s)} · ${new Date(s.created_at).toLocaleDateString()}</div></div>`).join("")
+    : `<span class="muted">No sessions yet.</span>`;
+  document.querySelectorAll(".sess").forEach(el => el.onclick = () => select(el.dataset.id));
+}
+
+async function select(id) {
+  current = sessions.find(s => s.id === id); renderList();
+  $("emptyDetail").classList.add("hidden"); $("sessDetail").classList.remove("hidden");
+  const url = new URL("index.html", location.href); url.search = "?code=" + current.code;
+  $("dTitle").textContent = current.code; $("dLink").textContent = url.href;
+  const s = current;
+  $("dSettings").innerHTML = `${esc(s.title)} · ${designLabel(s)} · contribution ${usd(s.contrib_min)}–${usd(s.contrib_max)} · tax rate ${fmt(100 * s.tax_rate, 1)}% · ${s.needs.length} years · incident in year ${s.incident_round} (need ${usd(s.incident_need)}) · Q* ${usd(qstar(s))}`;
+  await refresh();
+}
+
+async function refresh() {
+  if (!current) return;
+  try { lastData = await api.load(current.id); } catch (e) { alert(e.message); return; }
+  const s = current, A = analyse(s, lastData), n = s.needs.length;
+  $("toggleOpen").textContent = s.is_open ? "Close session" : "Reopen session";
+  $("kJoined").textContent = lastData.participants.length;
+  $("kDone").textContent = lastData.participants.filter(p => p.finished_at).length;
+  $("kDec").textContent = lastData.decisions.length;
+  const ys = A.students.filter(p => p.years).map(p => p.years).sort((a, b) => a - b);
+  $("kRound").textContent = ys.length ? ys[Math.floor(ys.length / 2)] : "–";
+
+  // by-year chart
+  const labels = Array.from({ length: n }, (_, i) => i + 1), ds = [];
+  A.cells.forEach(c => { const G = GROUPS[c.g];
+    ds.push({ label: G.label, data: A.byYear[c.g], borderColor: G.color, backgroundColor: G.color, borderDash: G.dash, tension: .25, spanGaps: true, pointRadius: 2.5, borderWidth: 2.5 }); });
+  ds.push({ label: "Need", data: s.needs, showLine: false, pointRadius: 4, backgroundColor: "#aaa", borderColor: "#aaa" });
+  if (s.incident_mode !== "no") ds.push({ label: "Need with incident", data: labels.map(r => r === s.incident_round ? s.incident_need : null), showLine: false, pointRadius: 6, pointStyle: "rectRot", backgroundColor: "#a33a2a", borderColor: "#a33a2a" });
+  ds.push({ label: "Q* (newsvendor)", data: labels.map(() => qstar(s)), borderColor: "#18211f", borderDash: [5, 5], pointRadius: 0, borderWidth: 1.2 });
+  const lo = Math.min(s.contrib_min, ...s.needs, s.incident_need), hi = Math.max(s.contrib_max, ...s.needs, s.incident_need);
+  drawChart("chart", { type: "line", data: { labels, datasets: ds }, options: { animation: false, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+    scales: { x: { title: { display: true, text: "Year" }, grid: { display: false } }, y: { suggestedMin: lo - 50, suggestedMax: hi + 50, title: { display: true, text: "Dollars" }, ticks: { callback: v => "$" + v.toLocaleString() } } },
+    plugins: { legend: { labels: { boxWidth: 12, usePointStyle: true } } } } });
+
+  // Table 2 layout
+  const pre = `Before (years 1–${s.incident_round})`, post = `After (years ${s.incident_round + 1}–${n})`;
+  $("cellTable").innerHTML = `<tr><th>Group</th><th>People</th><th colspan="3">${pre}: mean · SD · n</th><th colspan="3">${post}: mean · SD · n</th><th>Change</th></tr>` +
+    A.cells.map(c => `<tr><td><span class="dot" style="background:${GROUPS[c.g].color}"></span>${c.g}. ${GROUPS[c.g].label}</td><td>${c.people}</td>
+      <td><b>${usd(c.pre[0])}</b></td><td>${usd(c.pre[1])}</td><td>${c.pre[2]}</td><td><b>${usd(c.post[0])}</b></td><td>${usd(c.post[1])}</td><td>${c.post[2]}</td>
+      <td>${c.pre[0] != null && c.post[0] != null ? (c.post[0] >= c.pre[0] ? "+" : "−") + usd(Math.abs(c.post[0] - c.pre[0])) : "–"}</td></tr>`).join("");
+  $("note").innerHTML = `<b>Debrief.</b> Each dollar contributed saves <b>${fmt(100 * s.tax_rate, 1)}¢</b> of tax if it is spent (underage cost) but is lost if it goes unspent (overage cost ≈ $1 when leftover money has no value, s = 0).
+    The critical ratio is therefore t / (1 − s) = ${fmt(s.tax_rate, 2)}, and with needs spread evenly over ${usd(s.contrib_min)}–${usd(s.contrib_max)}, Q* = ${usd(qstar(s))}.
+    A student who values leftover money at s &gt; 0 (they can buy eligible items) should contribute more. Compare Astute vs Uninformed (Knowledge), and the change after year ${s.incident_round} in the incident groups vs the no-incident groups (Incident).`;
+
+  drawChart("items", { type: "bar", data: { labels: ["Personal Care & Hygiene", "Health & Wellness", "Specialized Care", "Forfeit"],
+    datasets: [{ label: `% of ${A.nForms} leftover-funds forms`, data: A.items, backgroundColor: ["#1f6f78", "#4f9aa3", "#8cc3c9", "#a33a2a"] }] },
+    options: { animation: false, maintainAspectRatio: false, plugins: { legend: { display: false } },
+      scales: { y: { min: 0, max: 100, ticks: { callback: v => v + "%" } }, x: { grid: { display: false } } } } });
+
+  renderStudents(A.students);
+}
+
+function drawChart(id, conf) { if (charts[id]) charts[id].destroy(); if (window.Chart) charts[id] = new Chart($(id), conf); }
+
+const COLS = [["num", "ID"], ["nickname", "Nickname"], ["student_ref", "Student ID"], ["grp", "Group"], ["years", "Years"], ["mean_c", "Mean"],
+              ["pre", "Before"], ["post", "After"], ["left", "Left over"], ["tax", "Tax missed"], ["rt", "Avg sec"]];
+function renderStudents(list) {
+  const rows = list.slice().sort((a, b) => { const x = a[sortKey], y = b[sortKey];
+    return (x == null) - (y == null) || (typeof x === "string" ? x.localeCompare(y) : x - y) * sortDir; });
+  $("partTable").innerHTML = "<tr>" + COLS.map(([k, l]) => `<th data-k="${k}">${l}${sortKey === k ? (sortDir > 0 ? " ▲" : " ▼") : ""}</th>`).join("") + "</tr>" +
+    rows.map(p => `<tr><td>${p.num}</td><td>${esc(p.nickname)}</td><td>${esc(p.student_ref || "")}</td><td><span class="dot" style="background:${GROUPS[p.grp].color}"></span>${GROUPS[p.grp].label}</td>
+      <td>${p.years}</td><td>${usd(p.mean_c)}</td><td>${usd(p.pre)}</td><td>${usd(p.post)}</td><td>${usd(p.left)}</td><td>${usd(p.tax)}</td><td>${fmt(p.rt / 1000, 1)}</td></tr>`).join("");
+  document.querySelectorAll("#partTable th").forEach(th => th.onclick = () => { const k = th.dataset.k; sortDir = sortKey === k ? -sortDir : 1; sortKey = k; renderStudents(list); });
+}
+
+function csv(rows, name) {
+  if (!rows.length) return alert("Nothing to export yet.");
+  const keys = Object.keys(rows[0]);
+  const q = v => v == null ? "" : /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : v;
+  const blob = new Blob([[keys.join(","), ...rows.map(r => keys.map(k => q(r[k])).join(","))].join("\n")], { type: "text/csv" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+}
+const b01 = v => v == null ? null : v ? 1 : 0;
+function joined() { const P = new Map(lastData.participants.map((p, i) => [p.id, { ...p, num: i + 1 }]));
+  return lastData.decisions.slice().sort((a, b) => P.get(a.participant_id).num - P.get(b.participant_id).num || a.round - b.round).map(d => ({ d, p: P.get(d.participant_id) })); }
+
+// ---------- events ----------
+$("loginForm").onsubmit = async e => { e.preventDefault(); $("loginErr").textContent = "";
+  try { await api.login($("email").value, $("pw").value); location.reload(); } catch (err) { $("loginErr").textContent = err.message; } };
+$("logoutBtn").onclick = async () => { await api.logout(); location.reload(); };
+$("refreshBtn").onclick = refresh;
+$("copyBtn").onclick = () => navigator.clipboard?.writeText($("dLink").textContent).then(() => { $("copyBtn").textContent = "Copied"; setTimeout(() => $("copyBtn").textContent = "Copy link", 1500); });
+$("toggleOpen").onclick = async () => { await api.setOpen(current.id, !current.is_open); current.is_open = !current.is_open; renderList(); refresh(); };
+$("deleteBtn").onclick = async () => { if (!confirm(`Delete session ${current.code} and ALL its data? This cannot be undone.`)) return;
+  await api.remove(current.id); sessions = await api.sessions(); current = null; renderList(); $("sessDetail").classList.add("hidden"); $("emptyDetail").classList.remove("hidden"); };
+$("auto").onchange = () => setTimer();
+
+// Same columns as Results/datasetforpaper.csv (ID, Group, Period, Need, Contribution, PCH, HW, SC, Forfeit, Information, Incident)
+$("csvPaper").onclick = () => csv(joined().map(({ d, p }) => ({ ID: p.num, Group: p.grp, Period: d.round, Need: d.need, Contribution: d.contribution,
+  PCH: b01(d.pch), HW: b01(d.hw), SC: b01(d.sc), Forfeit: b01(d.forfeit), Information: p.knowledge === "astute" ? "Yes" : "No",
+  Incident: p.incident && d.round > current.incident_round ? "Yes" : "No", IncidentGroup: p.incident ? "Yes" : "No" })), `fsa_${current.code}_paper_format.csv`);
+$("csvFull").onclick = () => csv(joined().map(({ d, p }) => ({ session: current.code, id: p.num, nickname: p.nickname, student_ref: p.student_ref, group: p.grp,
+  knowledge: p.knowledge, incident_group: p.incident, year: d.round, need: d.need, contribution: d.contribution, over_amt: d.over_amt, under_amt: d.under_amt,
+  tax_missed: d.tax_missed, pch: b01(d.pch), hw: b01(d.hw), sc: b01(d.sc), forfeit: b01(d.forfeit), response_ms: d.response_ms, items_ms: d.items_ms,
+  tax_rate: current.tax_rate, contrib_min: current.contrib_min, contrib_max: current.contrib_max, incident_year: current.incident_round, q_star: qstar(current), created_at: d.created_at })),
+  `fsa_${current.code}_decisions.csv`);
+$("csvStudents").onclick = () => csv(analyse(current, lastData).students.map(p => ({ session: current.code, id: p.num, nickname: p.nickname, student_ref: p.student_ref,
+  group: p.grp, knowledge: p.knowledge, incident_group: p.incident, years: p.years, mean_contribution: p.mean_c, sd_contribution: p.sd_c,
+  mean_before_incident_year: p.pre, mean_after_incident_year: p.post, total_left_over: p.left, total_tax_missed: p.tax,
+  mean_response_s: p.rt == null ? null : p.rt / 1000, intro_s: p.intro_ms == null ? null : p.intro_ms / 1000, finished: !!p.finished_at })), `fsa_${current.code}_students.csv`);
+
+// ---------- new-session form ----------
+const nf = $("newForm");
+const parseNeeds = t => t.split(/[\s,;]+/).filter(Boolean).map(Number);
+function formRow() {
+  const f = Object.fromEntries(new FormData(nf));
+  return { title: f.title.trim() || "FSA simulation", code: f.code.trim().toUpperCase(), knowledge_mode: f.knowledge_mode, incident_mode: f.incident_mode,
+    contrib_min: +f.contrib_min, contrib_max: +f.contrib_max, tax_rate: Math.round(+f.tax_pct * 10) / 1000,
+    needs: parseNeeds(f.needs), incident_round: +f.incident_round, incident_need: +f.incident_need, incident_text: f.incident_text.trim(),
+    annual_limit: +f.annual_limit, limit_year: +f.limit_year, show_intro: !!f.show_intro, show_debrief: !!f.show_debrief };
+}
+function problem(r) {
+  if (!/^[A-Z0-9]{3,12}$/.test(r.code)) return "Code: 3–12 letters or digits.";
+  if (!(Number.isInteger(r.contrib_min) && Number.isInteger(r.contrib_max) && r.contrib_min >= 0 && r.contrib_max > r.contrib_min)) return "Max contribution must be above min (whole dollars).";
+  if (!(r.tax_rate > 0 && r.tax_rate < 1)) return "Tax rate must be between 0 and 100%.";
+  if (!r.needs.length || r.needs.length > 50 || r.needs.some(v => !Number.isInteger(v) || v < 0)) return "Needs: 1–50 whole-dollar amounts, separated by commas.";
+  if (!(Number.isInteger(r.incident_round) && r.incident_round >= 1 && r.incident_round <= r.needs.length)) return `Incident year must be between 1 and ${r.needs.length}.`;
+  if (!(r.incident_need >= 0)) return "Incident need must be 0 or more.";
+  return null;
+}
+function preview() {
+  const r = formRow(), bad = problem(r);
+  $("preview").innerHTML = bad && !/^Code/.test(bad) ? `<span class="err">${bad}</span>` :
+    `${r.needs.length} years · mean need ${usd(mean(r.needs))} · Q* = ${usd(qstar(r))} (critical ratio = tax rate ${fmt(r.tax_rate, 3)})`;
+}
+nf.oninput = preview;
+$("needsPaper").onclick = () => { nf.needs.value = PAPER_NEEDS.join(", "); nf.incident_round.value = 5; nf.incident_need.value = 1900; preview(); };
+$("needsRandom").onclick = () => { const lo = +nf.contrib_min.value, hi = +nf.contrib_max.value, k = parseNeeds(nf.needs.value).length || 15;
+  nf.needs.value = Array.from({ length: k }, () => Math.round((lo + Math.random() * (hi - lo)) / 100) * 100).join(", "); preview(); };
+const newCode = () => "F" + Math.random().toString(36).slice(2, 7).toUpperCase();
+nf.code.value = newCode();
+nf.onsubmit = async e => { e.preventDefault(); $("newErr").textContent = "";
+  const r = formRow(), bad = problem(r); if (bad) { $("newErr").textContent = bad; return; }
+  try { const s = await api.create(r); sessions = await api.sessions(); nf.code.value = newCode(); await select(s.id); }
+  catch (err) { $("newErr").textContent = /duplicate/.test(err.message) ? "That code is already used. Pick another." : err.message; } };
+
+function setTimer() { clearInterval(timer); if ($("auto").checked) timer = setInterval(() => { if (!document.hidden) refresh(); }, 10000); }
+
+// ---------- boot ----------
+(async () => {
+  if (DEMO) $("demoBanner").classList.remove("hidden");
+  let user = null;
+  try { user = await api.init(); } catch (e) { $("vLogin").classList.remove("hidden"); $("loginErr").textContent = "Could not load Supabase: " + e.message; return; }
+  if (!user) { $("vLogin").classList.remove("hidden"); return; }
+  $("who").textContent = user.email; $("logoutBtn").classList.remove("hidden");
+  $("vApp").classList.remove("hidden"); preview();
+  try { sessions = await api.sessions(); } catch (e) { $("sessList").innerHTML = `<div class="err">${esc(e.message)}</div>`; return; }
+  renderList();
+  if (sessions.length) await select(sessions[0].id);
+  setTimer();
+})();
+})();
+</script>
+</body>
+</html>

@@ -11,6 +11,10 @@ and export the data or query it with SQL.
 | `schema.sql`: tables, game logic and reporting views | Supabase (hosted Postgres) | Free tier, no ads |
 | `analysis.sql`: ready-made reporting queries | Supabase SQL Editor | n/a |
 
+> **Also in this repository:** [`fsa/`](fsa/README.md) — the FSA allocation simulation (Flexible Spending
+> Accounts and the Newsvendor Model), a web version of the Excel/VBA experiment. It shares this site, `config.js`
+> and Supabase project; run `fsa/fsa_schema.sql` once to add its tables.
+
 **Try it first, without any setup.** Open `index.html` or `admin.html` straight from the folder. Without keys in
 `config.js`, both pages run in **demo mode**: the game works but nothing is saved, and the dashboard
 shows a simulated class.

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="A fallen bicycle and a first-aid kit">
+  <rect width="240" height="240" rx="16" fill="#fdf3ec"/>
+  <!-- ground -->
+  <path d="M10 196 H230" stroke="#d9cfbd" stroke-width="4" stroke-linecap="round"/>
+  <!-- fallen bicycle -->
+  <g fill="none" stroke="#1f6f78" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" transform="rotate(-18 110 170)">
+    <circle cx="62" cy="168" r="28"/>
+    <circle cx="150" cy="168" r="28"/>
+    <path d="M62 168 L92 128 L136 128 L150 168 M92 128 L108 168 L136 128 M86 116 h18 M136 128 l-4 -16 h14"/>
+  </g>
+  <!-- motion / bump marks -->
+  <g stroke="#c0702a" stroke-width="5" stroke-linecap="round">
+    <path d="M150 70 l10 -14 M168 80 l16 -6 M140 60 l-2 -18"/>
+  </g>
+  <!-- first aid kit -->
+  <g transform="translate(150 92)">
+    <rect x="0" y="12" width="70" height="52" rx="8" fill="#b4441c"/>
+    <rect x="22" y="2" width="26" height="14" rx="4" fill="none" stroke="#b4441c" stroke-width="5"/>
+    <path d="M35 24 v28 M21 38 h28" stroke="#fff" stroke-width="9" stroke-linecap="round"/>
+  </g>
+</svg>
