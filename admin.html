@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Newsvendor Game — Instructor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="vendor/chart.umd.min.js"></script>
+<style>
+  :root{ --paper:#f6f1e7; --card:#fffdf8; --ink:#1d1b18; --muted:#6b645a; --rule:#d9cfbd;
+         --accent:#b4441c; --high:#1f6f78; --low:#c0702a; --soft:#efe6d4; --bad:#a33a2a; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.5 Inter,system-ui,sans-serif}
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:3px double var(--ink);background:var(--card)}
+  header h1{font-family:Fraunces,Georgia,serif;font-size:22px;margin:0}
+  header .who{color:var(--muted);font-size:13px}
+  main{display:grid;grid-template-columns:300px 1fr;gap:18px;padding:18px 24px;max-width:1400px;margin:0 auto}
+  @media (max-width:900px){ main{grid-template-columns:1fr} }
+  .card{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:16px;margin-bottom:16px}
+  h2{font-family:Fraunces,Georgia,serif;font-size:18px;margin:0 0 10px}
+  h3{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin:0 0 8px}
+  label{display:block;font-weight:600;font-size:12px;margin:8px 0 3px;color:var(--muted)}
+  input,select{width:100%;font:inherit;padding:8px;border:1px solid var(--rule);border-radius:6px;background:#fff}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  button{font:inherit;font-weight:600;border:0;border-radius:6px;padding:9px 14px;cursor:pointer;background:var(--accent);color:#fff}
+  button.ghost{background:transparent;color:var(--ink);border:1px solid var(--rule)}
+  button.danger{background:transparent;color:var(--bad);border:1px solid var(--bad)}
+  button.sm{padding:5px 10px;font-size:12px}
+  .full{width:100%;margin-top:12px}
+  .sess{padding:10px;border-radius:8px;cursor:pointer;border:1px solid transparent;margin-bottom:4px}
+  .sess:hover{background:var(--soft)} .sess.active{background:var(--soft);border-color:var(--rule)}
+  .sess .code{font-weight:700;font-family:ui-monospace,Menlo,monospace}
+  .pill{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;margin-left:6px;vertical-align:1px}
+  .pill.open{background:#dcefdc;color:#2f6b3a} .pill.closed{background:#eee;color:#666}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+  .kpi{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:12px}
+  .kpi .k{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+  .kpi .v{font-family:Fraunces,Georgia,serif;font-size:28px;font-weight:600}
+  .toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px}
+  .toolbar .link{flex:1;min-width:240px;font-family:ui-monospace,Menlo,monospace;font-size:12px;background:var(--soft);padding:8px 10px;border-radius:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+  th,td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--rule);white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  th{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;cursor:pointer;user-select:none}
+  .scroll{overflow:auto;max-height:440px}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+  .muted{color:var(--muted)} .err{color:var(--bad);margin-top:8px}
+  .hidden{display:none!important}
+  .demo{background:#fff4c2;border:1px solid #e4cf6a;color:#5b4b00;border-radius:8px;padding:8px 12px;margin:12px 24px 0}
+  .login{max-width:380px;margin:60px auto}
+  .chartbox{position:relative;height:340px}
+  .debrief{background:var(--soft);border-radius:8px;padding:12px;font-size:13px}
+  .debrief code{font-size:13px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px} @media (max-width:1100px){.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Newsvendor Game · Instructor</h1>
+  <div><span class="who" id="who"></span> <button class="ghost sm hidden" id="logoutBtn">Sign out</button></div>
+</header>
+<div id="demoBanner" class="demo hidden">Demo mode: showing a simulated class of 32 students. Add your Supabase keys in <code>config.js</code> to use real data.</div>
+
+<!-- LOGIN -->
+<section id="vLogin" class="login card hidden">
+  <h2>Instructor sign in</h2>
+  <form id="loginForm">
+    <label>Email</label><input id="email" type="email" required autocomplete="username">
+    <label>Password</label><input id="pw" type="password" required autocomplete="current-password">
+    <button class="full" type="submit">Sign in</button>
+    <div class="err" id="loginErr"></div>
+  </form>
+</section>
+
+<!-- APP -->
+<main id="vApp" class="hidden">
+  <aside>
+    <div class="card">
+      <h2>Sessions</h2>
+      <div id="sessList"><span class="muted">Loading…</span></div>
+    </div>
+    <div class="card">
+      <h2>New session</h2>
+      <form id="newForm">
+        <label>Title</label><input name="title" value="Newsvendor game">
+        <div class="row2">
+          <div><label>Code</label><input name="code" required pattern="[A-Za-z0-9]{3,12}" style="text-transform:uppercase"></div>
+          <div><label>Rounds</label><input name="n_rounds" type="number" min="1" max="200" value="30"></div>
+        </div>
+        <div class="row2">
+          <div><label>Price</label><input name="price" type="number" step="0.01" value="12"></div>
+          <div><label>Salvage</label><input name="salvage" type="number" step="0.01" value="0"></div>
+        </div>
+        <div class="row2">
+          <div><label>Cost · high margin</label><input name="cost_high_margin" type="number" step="0.01" value="3"></div>
+          <div><label>Cost · low margin</label><input name="cost_low_margin" type="number" step="0.01" value="9"></div>
+        </div>
+        <div class="row2">
+          <div><label>Demand min</label><input name="demand_min" type="number" value="1"></div>
+          <div><label>Demand max</label><input name="demand_max" type="number" value="300"></div>
+        </div>
+        <label>Assign students to</label>
+        <select name="assignment">
+          <option value="random">Both conditions (balanced random)</option>
+          <option value="high">High margin only</option>
+          <option value="low">Low margin only</option>
+        </select>
+        <label>Price/cost display</label>
+        <select name="param_display">
+          <option value="always">Always visible</option>
+          <option value="click">Hidden until clicked (logs attention)</option>
+        </select>
+        <label><input name="show_leaderboard" type="checkbox" checked style="width:auto"> Show leaderboard at the end</label>
+        <div class="muted" id="qPreview" style="margin-top:8px"></div>
+        <button class="full" type="submit">Create session</button>
+        <div class="err" id="newErr"></div>
+      </form>
+    </div>
+  </aside>
+
+  <section id="detail">
+    <div class="card" id="emptyDetail"><span class="muted">Create or select a session.</span></div>
+    <div id="sessDetail" class="hidden">
+      <div class="toolbar">
+        <h2 style="margin:0" id="dTitle"></h2>
+        <div class="link" id="dLink" title="Student link"></div>
+        <button class="ghost sm" id="copyBtn">Copy link</button>
+        <button class="ghost sm" id="toggleOpen"></button>
+        <label style="margin:0;display:flex;gap:4px;align-items:center;color:var(--ink)"><input type="checkbox" id="auto" checked style="width:auto"> Live (10s)</label>
+        <button class="ghost sm" id="refreshBtn">Refresh</button>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><div class="k">Joined</div><div class="v" id="kJoined">0</div></div>
+        <div class="kpi"><div class="k">Finished</div><div class="v" id="kDone">0</div></div>
+        <div class="kpi"><div class="k">Decisions</div><div class="v" id="kDec">0</div></div>
+        <div class="kpi"><div class="k">Median round</div><div class="v" id="kRound">–</div></div>
+      </div>
+
+      <div class="card">
+        <h3>Average order by round</h3>
+        <div class="chartbox"><canvas id="chart"></canvas></div>
+        <div class="muted" style="margin-top:6px">Solid lines: class mean order. Dashed: optimal order Q*. Dotted grey: mean demand. Grey dots: realised demand.</div>
+      </div>
+
+      <div class="grid2">
+        <div class="card">
+          <h3>By condition</h3>
+          <table id="condTable"></table>
+          <div class="debrief" id="debrief" style="margin-top:12px"></div>
+        </div>
+        <div class="card">
+          <h3>Distribution of mean orders</h3>
+          <div class="chartbox" style="height:260px"><canvas id="hist"></canvas></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <h3 style="margin:0">Students</h3>
+          <div style="display:flex;gap:8px">
+            <button class="ghost sm" id="csvStudents">Export students CSV</button>
+            <button class="sm" id="csvDecisions">Export all decisions CSV</button>
+          </div>
+        </div>
+        <div class="scroll"><table id="partTable"></table></div>
+      </div>
+
+      <div style="text-align:right"><button class="danger sm" id="deleteBtn">Delete session and its data</button></div>
+    </div>
+  </section>
+</main>
+
+<script src="config.js" onerror="void 0"></script>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = (v, d = 1) => v == null || !isFinite(v) ? "–" : Number(v).toLocaleString(undefined, { minimumFractionDigits: d, maximumFractionDigits: d });
+const money = v => v == null ? "–" : (v < 0 ? "−$" : "$") + Math.abs(v).toLocaleString(undefined, { maximumFractionDigits: 0 });
+const cfg = window.NV_CONFIG || {};
+const DEMO = !cfg.SUPABASE_URL || /YOUR-PROJECT/.test(cfg.SUPABASE_URL) || !cfg.SUPABASE_KEY || /YOUR-/.test(cfg.SUPABASE_KEY);
+const COLORS = { high: "#1f6f78", low: "#c0702a" };
+const LABEL = { high: "High margin", low: "Low margin" };
+
+// ---------- newsvendor math (mirrors schema.sql) ----------
+const qstar = (s, c) => Math.round(s.demand_min + (s.price - c) / (s.price - s.salvage) * (s.demand_max - s.demand_min));
+const nvProfit = (q, d, p, c, sv) => p * Math.min(q, d) + sv * Math.max(q - d, 0) - c * q;
+const mean = a => a.length ? a.reduce((t, x) => t + x, 0) / a.length : null;
+const sd = a => { if (a.length < 2) return null; const m = mean(a); return Math.sqrt(a.reduce((t, x) => t + (x - m) ** 2, 0) / (a.length - 1)); };
+const corr = (x, y) => { const n = x.length; if (n < 3) return null; const mx = mean(x), my = mean(y);
+  let sxy = 0, sxx = 0, syy = 0; for (let i = 0; i < n; i++) { sxy += (x[i]-mx)*(y[i]-my); sxx += (x[i]-mx)**2; syy += (y[i]-my)**2; }
+  return sxx && syy ? sxy / Math.sqrt(sxx * syy) : null; };
+
+// ---------- data layer: Supabase or demo ----------
+let sb = null;
+const api = DEMO ? demoApi() : supabaseApi();
+
+function supabaseApi() {
+  return {
+    async init() {
+      await new Promise((ok, bad) => { const s = document.createElement("script");
+        s.src = "vendor/supabase.js"; s.onload = ok; s.onerror = bad; document.head.appendChild(s); });
+      sb = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
+      const { data } = await sb.auth.getSession(); return data.session?.user || null;
+    },
+    async login(email, pw) { const { data, error } = await sb.auth.signInWithPassword({ email, password: pw }); if (error) throw error; return data.user; },
+    async logout() { await sb.auth.signOut(); },
+    async sessions() { const { data, error } = await sb.from("sessions").select("*").order("created_at", { ascending: false }); if (error) throw error; return data; },
+    async create(row) { const { data, error } = await sb.from("sessions").insert(row).select().single(); if (error) throw error; return data; },
+    async setOpen(id, open) { const { error } = await sb.from("sessions").update({ is_open: open }).eq("id", id); if (error) throw error; },
+    async remove(id) { const { error } = await sb.from("sessions").delete().eq("id", id); if (error) throw error; },
+    async load(id) {
+      const parts = await sb.from("participants").select("id,nickname,student_ref,condition,unit_cost,joined_at,finished_at").eq("session_id", id);
+      if (parts.error) throw parts.error;
+      const dem = await sb.from("session_demand").select("round,demand").eq("session_id", id).order("round");
+      if (dem.error) throw dem.error;
+      // page through decisions (Supabase returns max 1000 rows per request)
+      let decs = [], from = 0;
+      for (;;) {
+        const r = await sb.from("decisions").select("participant_id,round,order_qty,demand,sales,leftover,shortage,profit,response_ms,param_reveals,created_at")
+          .eq("session_id", id).order("id").range(from, from + 999);
+        if (r.error) throw r.error; decs = decs.concat(r.data); if (r.data.length < 1000) break; from += 1000;
+      }
+      return { participants: parts.data, demand: dem.data, decisions: decs };
+    }
+  };
+}
+
+function demoApi() {
+  const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  const S = { id: "demo1", code: "DEMO", title: "Simulated class", n_rounds: 30, price: 12, salvage: 0, cost_high_margin: 3, cost_low_margin: 9,
+              demand_min: 1, demand_max: 300, assignment: "random", param_display: "always", show_leaderboard: true, is_open: true, created_at: new Date().toISOString() };
+  const demand = Array.from({ length: 30 }, (_, i) => ({ round: i + 1, demand: rnd(1, 300) }));
+  const participants = [], decisions = [];
+  const names = ["Ava","Ben","Cleo","Dev","Eli","Fay","Gus","Hana","Ivo","Jun","Kai","Lea","Max","Nia","Oto","Pia","Quin","Rae","Sam","Tia","Uma","Vic","Wes","Xia","Yao","Zed","Ana","Bo","Cy","Di","Ed","Flo"];
+  names.forEach((n, i) => {
+    const cond = i % 2 ? "low" : "high", c = cond === "high" ? 3 : 9, qs = qstar(S, c), id = "p" + i;
+    const anchor = 0.3 + Math.random() * 0.5, chase = Math.random() * 0.5, rounds = i < 26 ? 30 : rnd(8, 25);
+    participants.push({ id, nickname: n, student_ref: "S" + (1000 + i), condition: cond, unit_cost: c, joined_at: S.created_at, finished_at: rounds === 30 ? S.created_at : null });
+    let pq = null, pd = null;
+    for (let r = 1; r <= rounds; r++) {
+      let q = (1 - anchor) * qs + anchor * 150.5 + (pd != null ? chase * (pd - pq) : 0) + (Math.random() - .5) * 50;
+      q = Math.max(0, Math.round(q)); const d = demand[r - 1].demand, s = Math.min(q, d);
+      decisions.push({ participant_id: id, round: r, order_qty: q, demand: d, sales: s, leftover: q - s, shortage: Math.max(d - q, 0),
+                       profit: nvProfit(q, d, 12, c, 0), response_ms: rnd(2000, 12000), param_reveals: null, created_at: S.created_at });
+      pq = q; pd = d;
+    }
+  });
+  let sessions = [S];
+  return {
+    async init() { return { email: "demo@example.edu" }; },
+    async login() { return { email: "demo@example.edu" }; }, async logout() {},
+    async sessions() { return sessions; },
+    async create(row) { const s = { ...S, ...row, id: "s" + Date.now(), created_at: new Date().toISOString(), is_open: true }; sessions = [s, ...sessions]; return s; },
+    async setOpen(id, open) { sessions.find(s => s.id === id).is_open = open; },
+    async remove(id) { sessions = sessions.filter(s => s.id !== id); },
+    async load(id) { return id === "demo1" ? { participants, demand, decisions } : { participants: [], demand: [], decisions: [] }; }
+  };
+}
+
+// ---------- analysis (same definitions as the SQL views) ----------
+function analyse(sess, data) {
+  const byP = new Map(data.participants.map(p => [p.id, { ...p, decs: [] }]));
+  data.decisions.forEach(d => byP.get(d.participant_id)?.decs.push(d));
+  const meanD = (sess.demand_min + sess.demand_max) / 2;
+  const students = [...byP.values()].map(p => {
+    const ds = p.decs.sort((a, b) => a.round - b.round), c = Number(p.unit_cost), qs = qstar(sess, c);
+    const orders = ds.map(d => d.order_qty);
+    const chg = [], err = [];
+    for (let i = 1; i < ds.length; i++) { chg.push(ds[i].order_qty - ds[i-1].order_qty); err.push(ds[i-1].demand - ds[i-1].order_qty); }
+    const tot = ds.reduce((t, d) => t + Number(d.profit), 0);
+    const opt = ds.reduce((t, d) => t + nvProfit(qs, d.demand, +sess.price, c, +sess.salvage), 0);
+    const mo = mean(orders);
+    const rts = ds.map(d => d.response_ms).filter(x => x != null), rv = ds.map(d => d.param_reveals).filter(x => x != null);
+    return { ...p, qs, rounds: ds.length, mean_order: mo, sd_order: sd(orders),
+      mad: mean(ds.map(d => Math.abs(d.order_qty - qs))),
+      ptc: mo == null || meanD === qs ? null : (mo - qs) / (meanD - qs),
+      chase: corr(chg, err), total: tot, eff: opt ? 100 * tot / opt : null,
+      rt: rts.length ? mean(rts) / 1000 : null, reveals: rv.length ? mean(rv) : null };
+  });
+  const played = students.filter(s => s.rounds > 0);
+  const conds = ["high", "low"].map(cond => {
+    const g = played.filter(s => s.condition === cond); if (!g.length) return null;
+    const vals = k => g.map(s => s[k]).filter(v => v != null);
+    return { cond, n: g.length, cost: g[0].unit_cost, qs: g[0].qs, cr: (sess.price - g[0].unit_cost) / (sess.price - sess.salvage),
+             mean_order: mean(vals("mean_order")), sd_between: sd(vals("mean_order")), ptc: mean(vals("ptc")), chase: mean(vals("chase")),
+             eff: mean(vals("eff")), rt: mean(vals("rt")) };
+  }).filter(Boolean);
+  const byRound = {};
+  ["high", "low"].forEach(cond => {
+    byRound[cond] = Array.from({ length: sess.n_rounds }, (_, i) => {
+      const o = data.decisions.filter(d => d.round === i + 1 && byP.get(d.participant_id)?.condition === cond).map(d => d.order_qty);
+      return o.length ? mean(o) : null; });
+  });
+  return { students, conds, byRound, meanD, played };
+}
+
+// ---------- rendering ----------
+let sessions = [], current = null, lastData = null, charts = {}, timer = null, sortKey = "nickname", sortDir = 1;
+
+function renderList() {
+  $("sessList").innerHTML = sessions.length ? sessions.map(s =>
+    `<div class="sess ${current?.id === s.id ? "active" : ""}" data-id="${s.id}">
+       <span class="code">${esc(s.code)}</span><span class="pill ${s.is_open ? "open" : "closed"}">${s.is_open ? "open" : "closed"}</span>
+       <div class="muted">${esc(s.title)} · ${new Date(s.created_at).toLocaleDateString()}</div></div>`).join("")
+    : `<span class="muted">No sessions yet.</span>`;
+  document.querySelectorAll(".sess").forEach(el => el.onclick = () => select(el.dataset.id));
+}
+
+async function select(id) {
+  current = sessions.find(s => s.id === id); renderList();
+  $("emptyDetail").classList.add("hidden"); $("sessDetail").classList.remove("hidden");
+  const url = new URL("index.html", location.href); url.search = "?code=" + current.code;
+  $("dTitle").textContent = current.code; $("dLink").textContent = url.href;
+  await refresh();
+}
+
+async function refresh() {
+  if (!current) return;
+  try { lastData = await api.load(current.id); } catch (e) { alert(e.message); return; }
+  const s = current, A = analyse(s, lastData);
+  $("toggleOpen").textContent = s.is_open ? "Close session" : "Reopen session";
+  $("kJoined").textContent = lastData.participants.length;
+  $("kDone").textContent = lastData.participants.filter(p => p.finished_at).length;
+  $("kDec").textContent = lastData.decisions.length;
+  const rs = A.played.map(p => p.rounds).sort((a, b) => a - b);
+  $("kRound").textContent = rs.length ? rs[Math.floor(rs.length / 2)] : "–";
+
+  // condition table
+  $("condTable").innerHTML = `<tr><th>Condition</th><th>n</th><th>Cost</th><th>CR</th><th>Q*</th><th>Mean order</th><th>Pull-to-centre</th><th>Chasing r</th><th>Efficiency</th></tr>` +
+    A.conds.map(c => `<tr><td><span class="dot" style="background:${COLORS[c.cond]}"></span>${LABEL[c.cond]}</td><td>${c.n}</td><td>$${fmt(c.cost, 2)}</td>
+      <td>${fmt(c.cr, 2)}</td><td>${c.qs}</td><td><b>${fmt(c.mean_order)}</b></td><td>${fmt(c.ptc, 2)}</td><td>${fmt(c.chase, 2)}</td><td>${fmt(c.eff)}%</td></tr>`).join("") ;
+  $("debrief").innerHTML = `<b>Debrief.</b> Critical ratio CR = (p − c) / (p − s). With uniform demand on [${s.demand_min}, ${s.demand_max}], Q* = ${s.demand_min} + CR × ${s.demand_max - s.demand_min}. Mean demand is ${fmt(A.meanD)}.
+     Pull-to-centre: 0 means ordering at Q*, 1 means ordering at mean demand. Chasing r &gt; 0 means students raise orders after stock-outs and cut them after leftovers.`;
+
+  // order-by-round chart
+  const labels = Array.from({ length: s.n_rounds }, (_, i) => i + 1);
+  const ds = [];
+  A.conds.forEach(c => {
+    ds.push({ label: LABEL[c.cond] + " · mean order", data: A.byRound[c.cond], borderColor: COLORS[c.cond], backgroundColor: COLORS[c.cond], tension: .25, spanGaps: true, pointRadius: 2, borderWidth: 2.5 });
+    ds.push({ label: LABEL[c.cond] + " · Q*", data: labels.map(() => c.qs), borderColor: COLORS[c.cond], borderDash: [6, 5], pointRadius: 0, borderWidth: 1.5 });
+  });
+  ds.push({ label: "Mean demand", data: labels.map(() => A.meanD), borderColor: "#999", borderDash: [2, 4], pointRadius: 0, borderWidth: 1.5 });
+  ds.push({ label: "Realised demand", data: lastData.demand.map(d => d.demand), showLine: false, pointRadius: 3, backgroundColor: "#bbb", borderColor: "#bbb" });
+  drawChart("chart", { type: "line", data: { labels, datasets: ds }, options: { animation: false, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
+    scales: { x: { title: { display: true, text: "Round" }, grid: { display: false } }, y: { min: s.demand_min, max: s.demand_max, title: { display: true, text: "Units" } } },
+    plugins: { legend: { labels: { boxWidth: 12, usePointStyle: true } } } } });
+
+  // histogram of student mean orders
+  const bins = 10, w = (s.demand_max - s.demand_min) / bins;
+  const hl = Array.from({ length: bins }, (_, i) => Math.round(s.demand_min + i * w) + "–" + Math.round(s.demand_min + (i + 1) * w));
+  const hds = A.conds.map(c => ({ label: LABEL[c.cond], backgroundColor: COLORS[c.cond] + "cc",
+    data: Array.from({ length: bins }, (_, i) => A.played.filter(p => p.condition === c.cond && Math.min(bins - 1, Math.floor((p.mean_order - s.demand_min) / w)) === i).length) }));
+  drawChart("hist", { type: "bar", data: { labels: hl, datasets: hds }, options: { animation: false, maintainAspectRatio: false,
+    scales: { x: { title: { display: true, text: "Student's mean order" }, grid: { display: false } }, y: { ticks: { precision: 0 }, title: { display: true, text: "Students" } } } } });
+
+  renderStudents(A.students);
+}
+
+function drawChart(id, conf) { if (charts[id]) charts[id].destroy(); if (window.Chart) charts[id] = new Chart($(id), conf); }
+
+const COLS = [["nickname", "Nickname"], ["student_ref", "ID"], ["condition", "Cond."], ["rounds", "Rounds"], ["mean_order", "Mean Q"], ["qs", "Q*"],
+              ["ptc", "Pull-to-ctr"], ["chase", "Chasing r"], ["total", "Profit"], ["eff", "Eff. %"], ["rt", "Avg sec"]];
+function renderStudents(list) {
+  const rows = list.slice().sort((a, b) => { const x = a[sortKey], y = b[sortKey];
+    return (x == null) - (y == null) || (typeof x === "string" ? x.localeCompare(y) : x - y) * sortDir; });
+  $("partTable").innerHTML = "<tr>" + COLS.map(([k, l]) => `<th data-k="${k}">${l}${sortKey === k ? (sortDir > 0 ? " ▲" : " ▼") : ""}</th>`).join("") + "</tr>" +
+    rows.map(p => `<tr><td>${esc(p.nickname)}</td><td>${esc(p.student_ref || "")}</td><td><span class="dot" style="background:${COLORS[p.condition]}"></span>${p.condition}</td>
+      <td>${p.rounds}</td><td>${fmt(p.mean_order)}</td><td>${p.qs}</td><td>${fmt(p.ptc, 2)}</td><td>${fmt(p.chase, 2)}</td><td>${money(p.total)}</td><td>${fmt(p.eff)}</td><td>${fmt(p.rt)}</td></tr>`).join("");
+  document.querySelectorAll("#partTable th").forEach(th => th.onclick = () => { const k = th.dataset.k; sortDir = sortKey === k ? -sortDir : 1; sortKey = k; renderStudents(list); });
+}
+
+function csv(rows, name) {
+  if (!rows.length) return alert("Nothing to export yet.");
+  const keys = Object.keys(rows[0]);
+  const q = v => v == null ? "" : /[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : v;
+  const blob = new Blob([[keys.join(","), ...rows.map(r => keys.map(k => q(r[k])).join(","))].join("\n")], { type: "text/csv" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+}
+
+// ---------- events ----------
+$("loginForm").onsubmit = async e => { e.preventDefault(); $("loginErr").textContent = "";
+  try { await api.login($("email").value, $("pw").value); location.reload(); } catch (err) { $("loginErr").textContent = err.message; } };
+$("logoutBtn").onclick = async () => { await api.logout(); location.reload(); };
+$("refreshBtn").onclick = refresh;
+$("copyBtn").onclick = () => navigator.clipboard?.writeText($("dLink").textContent).then(() => { $("copyBtn").textContent = "Copied"; setTimeout(() => $("copyBtn").textContent = "Copy link", 1500); });
+$("toggleOpen").onclick = async () => { await api.setOpen(current.id, !current.is_open); current.is_open = !current.is_open; renderList(); refresh(); };
+$("deleteBtn").onclick = async () => { if (!confirm(`Delete session ${current.code} and ALL its data? This cannot be undone.`)) return;
+  await api.remove(current.id); sessions = await api.sessions(); current = null; renderList(); $("sessDetail").classList.add("hidden"); $("emptyDetail").classList.remove("hidden"); };
+$("auto").onchange = () => setTimer();
+$("csvDecisions").onclick = () => { const P = new Map(lastData.participants.map(p => [p.id, p]));
+  csv(lastData.decisions.map(d => { const p = P.get(d.participant_id) || {}; return { session: current.code, nickname: p.nickname, student_ref: p.student_ref,
+    condition: p.condition, unit_cost: p.unit_cost, price: current.price, salvage: current.salvage, q_star: qstar(current, +p.unit_cost), ...d }; }), `decisions_${current.code}.csv`); };
+$("csvStudents").onclick = () => csv(analyse(current, lastData).students.map(p => ({ session: current.code, nickname: p.nickname, student_ref: p.student_ref,
+  condition: p.condition, unit_cost: p.unit_cost, rounds: p.rounds, mean_order: p.mean_order, sd_order: p.sd_order, q_star: p.qs, mean_abs_dev: p.mad,
+  pull_to_center: p.ptc, demand_chasing_corr: p.chase, total_profit: p.total, efficiency_pct: p.eff, mean_response_s: p.rt, mean_param_reveals: p.reveals })), `students_${current.code}.csv`);
+
+const nf = $("newForm");
+function preview() { const f = Object.fromEntries(new FormData(nf)), s = { demand_min: +f.demand_min, demand_max: +f.demand_max, price: +f.price, salvage: +f.salvage };
+  $("qPreview").textContent = `Q* high margin = ${qstar(s, +f.cost_high_margin)}, Q* low margin = ${qstar(s, +f.cost_low_margin)}, mean demand = ${(s.demand_min + s.demand_max) / 2}`; }
+nf.oninput = preview;
+nf.code.value = "C" + Math.random().toString(36).slice(2, 7).toUpperCase();
+nf.onsubmit = async e => { e.preventDefault(); $("newErr").textContent = "";
+  const f = Object.fromEntries(new FormData(nf));
+  const row = { title: f.title, code: f.code.toUpperCase(), n_rounds: +f.n_rounds, price: +f.price, salvage: +f.salvage,
+    cost_high_margin: +f.cost_high_margin, cost_low_margin: +f.cost_low_margin, demand_min: +f.demand_min, demand_max: +f.demand_max,
+    assignment: f.assignment, param_display: f.param_display, show_leaderboard: !!f.show_leaderboard };
+  try { const s = await api.create(row); sessions = await api.sessions(); nf.code.value = "C" + Math.random().toString(36).slice(2, 7).toUpperCase(); await select(s.id); }
+  catch (err) { $("newErr").textContent = /duplicate/.test(err.message) ? "That code is already used — pick another." : err.message; } };
+
+function setTimer() { clearInterval(timer); if ($("auto").checked) timer = setInterval(() => { if (!document.hidden) refresh(); }, 10000); }
+
+// ---------- boot ----------
+(async () => {
+  if (DEMO) $("demoBanner").classList.remove("hidden");
+  let user = null;
+  try { user = await api.init(); } catch (e) { $("vLogin").classList.remove("hidden"); $("loginErr").textContent = "Could not load Supabase: " + e.message; return; }
+  if (!user) { $("vLogin").classList.remove("hidden"); return; }
+  $("who").textContent = user.email; $("logoutBtn").classList.remove("hidden");
+  $("vApp").classList.remove("hidden"); preview();
+  sessions = await api.sessions(); renderList();
+  if (sessions.length) await select(sessions[0].id);
+  setTimer();
+})();
+})();
+</script>
+</body>
+</html>

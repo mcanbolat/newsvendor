@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Newsvendor Game</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f6f1e7; --card:#fffdf8; --ink:#1d1b18; --muted:#6b645a; --rule:#d9cfbd;
+    --accent:#b4441c; --accent-ink:#fff; --good:#2f6b3a; --bad:#a33a2a; --soft:#efe6d4;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--paper);color:var(--ink);
+    font:16px/1.5 Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+  .wrap{max-width:640px;margin:0 auto;padding:20px 16px 60px}
+  header.mast{text-align:center;border-bottom:3px double var(--ink);padding-bottom:10px;margin-bottom:18px}
+  .mast h1{font-family:Fraunces,Georgia,serif;font-weight:800;font-size:clamp(28px,7vw,40px);margin:0;letter-spacing:-.5px}
+  .mast .sub{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:2px}
+  .demo{background:#fff4c2;border:1px solid #e4cf6a;color:#5b4b00;font-size:13px;border-radius:8px;padding:8px 12px;margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--rule);border-radius:12px;padding:18px;margin-bottom:14px}
+  h2{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:22px;margin:0 0 10px}
+  label{display:block;font-weight:600;font-size:14px;margin:12px 0 4px}
+  input[type=text],input[type=number]{width:100%;font:inherit;font-size:18px;padding:12px;border:1px solid var(--rule);border-radius:8px;background:#fff}
+  input:focus{outline:2px solid var(--accent);outline-offset:1px}
+  button{font:inherit;font-weight:600;border:0;border-radius:8px;padding:13px 18px;cursor:pointer;background:var(--accent);color:var(--accent-ink);width:100%;margin-top:14px;font-size:16px}
+  button.ghost{background:transparent;color:var(--accent);border:1px solid var(--accent)}
+  button:disabled{opacity:.5;cursor:default}
+  .err{color:var(--bad);font-size:14px;margin-top:8px;min-height:1em}
+  .params{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .param{background:var(--soft);border-radius:8px;padding:10px 12px}
+  .param .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+  .param .v{font-family:Fraunces,Georgia,serif;font-size:22px;font-weight:600}
+  .param.wide{grid-column:1/-1}
+  .topbar{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+  .topbar .r{font-family:Fraunces,Georgia,serif;font-size:20px;font-weight:600}
+  .topbar .c{font-size:14px;color:var(--muted)}
+  .topbar .c b{color:var(--ink);font-size:18px}
+  .progress{height:4px;background:var(--rule);border-radius:2px;overflow:hidden;margin-bottom:16px}
+  .progress div{height:100%;background:var(--accent);transition:width .3s}
+  .result{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;margin:6px 0}
+  .result .k{font-size:12px;color:var(--muted)}
+  .result .v{font-family:Fraunces,Georgia,serif;font-size:24px;font-weight:600}
+  .profit-line{text-align:center;font-size:15px;margin-top:6px}
+  .profit-line b{font-family:Fraunces,Georgia,serif;font-size:28px}
+  .pos{color:var(--good)} .neg{color:var(--bad)}
+  table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+  th,td{padding:6px 4px;text-align:right;border-bottom:1px solid var(--rule)}
+  th:first-child,td:first-child{text-align:left}
+  th{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  tr.me td{background:#fbe9de;font-weight:600}
+  .hist{max-height:320px;overflow:auto}
+  .muted{color:var(--muted);font-size:14px}
+  .hidden{display:none!important}
+  ul.rules{padding-left:20px;margin:8px 0} ul.rules li{margin:6px 0}
+  .reveal{background:var(--soft);border:1px dashed var(--muted);color:var(--ink);margin-top:0}
+  .big{font-family:Fraunces,Georgia,serif;font-size:44px;font-weight:800;text-align:center;margin:8px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="mast">
+    <h1>The Newsvendor Game</h1>
+    <div class="sub" id="mastSub">Order today · sell tomorrow</div>
+  </header>
+  <div id="demoBanner" class="demo hidden">Demo mode: nothing is saved. Add your Supabase keys in <code>config.js</code> to collect data.</div>
+
+  <!-- JOIN -->
+  <section id="vJoin" class="card hidden">
+    <h2>Join your class session</h2>
+    <form id="joinForm" autocomplete="off">
+      <label for="code">Session code</label>
+      <input id="code" type="text" required maxlength="12" placeholder="e.g. OPS101" style="text-transform:uppercase">
+      <label for="nick">Nickname <span class="muted">(shown on the leaderboard)</span></label>
+      <input id="nick" type="text" required maxlength="40">
+      <label for="sref">Student ID <span class="muted">(optional, only your instructor sees it)</span></label>
+      <input id="sref" type="text" maxlength="60">
+      <button type="submit" id="joinBtn">Join</button>
+      <div class="err" id="joinErr"></div>
+    </form>
+  </section>
+
+  <!-- INSTRUCTIONS -->
+  <section id="vIntro" class="card hidden">
+    <h2>Your job</h2>
+    <p>You run a newsstand. Each day you must decide <b>how many units to order before you know demand</b>.</p>
+    <ul class="rules">
+      <li>Each unit you order costs <b id="iCost"></b>.</li>
+      <li>Each unit you sell earns <b id="iPrice"></b>.</li>
+      <li id="iSalvageLi">Units left unsold at the end of the day are <span id="iSalvage"></span>.</li>
+      <li>If demand exceeds your order, the extra customers leave and you earn nothing from them.</li>
+      <li>Daily demand is random: any whole number from <b id="iMin"></b> to <b id="iMax"></b> is equally likely, and each day is independent of the others.</li>
+      <li>You will play <b id="iRounds"></b> rounds. Try to earn as much total profit as you can.</li>
+    </ul>
+    <button id="startBtn">Start round 1</button>
+  </section>
+
+  <!-- PLAY -->
+  <section id="vPlay" class="hidden">
+    <div class="card">
+      <div class="topbar">
+        <div class="r">Round <span id="pRound"></span> <span class="muted">of <span id="pN"></span></span></div>
+        <div class="c">Total profit <b id="pCum">$0</b></div>
+      </div>
+      <div class="progress"><div id="pBar" style="width:0"></div></div>
+
+      <button class="reveal ghost hidden" id="revealBtn" type="button">Show prices &amp; costs</button>
+      <div class="params" id="paramBox">
+        <div class="param"><div class="k">Selling price</div><div class="v" id="pPrice"></div></div>
+        <div class="param"><div class="k">Unit cost</div><div class="v" id="pCost"></div></div>
+        <div class="param"><div class="k">Salvage value</div><div class="v" id="pSalv"></div></div>
+        <div class="param"><div class="k">Demand range</div><div class="v" id="pRange"></div></div>
+      </div>
+
+      <form id="orderForm" autocomplete="off">
+        <label for="qty">How many units do you order?</label>
+        <input id="qty" type="number" inputmode="numeric" min="0" step="1" required>
+        <button type="submit" id="orderBtn">Place order</button>
+        <div class="err" id="orderErr"></div>
+      </form>
+
+      <div id="resultBox" class="hidden">
+        <div class="result">
+          <div><div class="k">You ordered</div><div class="v" id="rQ"></div></div>
+          <div><div class="k">Demand was</div><div class="v" id="rD"></div></div>
+          <div><div class="k">You sold</div><div class="v" id="rS"></div></div>
+        </div>
+        <div class="muted" style="text-align:center" id="rNote"></div>
+        <div class="profit-line">Profit this round <b id="rP"></b></div>
+        <button id="nextBtn" type="button">Next round</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:18px">Your history</h2>
+      <div class="hist">
+        <table><thead><tr><th>Round</th><th>Order</th><th>Demand</th><th>Sold</th><th>Profit</th></tr></thead>
+        <tbody id="histBody"></tbody></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- DONE -->
+  <section id="vDone" class="hidden">
+    <div class="card" style="text-align:center">
+      <h2>All rounds complete</h2>
+      <div class="muted">Your total profit</div>
+      <div class="big" id="dTotal"></div>
+      <div class="muted">Thanks for playing — wait for your instructor's debrief.</div>
+    </div>
+    <div class="card" id="lbCard">
+      <h2 style="font-size:18px">Leaderboard <span class="muted">(players with your prices)</span></h2>
+      <p class="muted" style="margin-top:0">Ranked by efficiency: your profit as a % of what the best possible standing order would have earned on the same demand.</p>
+      <table><thead><tr><th>#</th><th>Player</th><th>Rounds</th><th>Profit</th><th>Eff.</th></tr></thead>
+      <tbody id="lbBody"></tbody></table>
+      <button class="ghost" id="lbRefresh" type="button">Refresh</button>
+    </div>
+  </section>
+</div>
+
+<script src="config.js" onerror="void 0"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const money = v => (v < 0 ? "−$" : "$") + Math.abs(Number(v)).toLocaleString(undefined, {maximumFractionDigits: 2});
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const STORE = "nv_game_v1";
+  const cfg = window.NV_CONFIG || {};
+  const DEMO = !cfg.SUPABASE_URL || /YOUR-PROJECT/.test(cfg.SUPABASE_URL) || !cfg.SUPABASE_KEY || /YOUR-/.test(cfg.SUPABASE_KEY);
+
+  // ---------------- API: Supabase RPC, or a local demo engine ----------------
+  async function rpc(fn, args) {
+    if (DEMO) return demo[fn](args);
+    const res = await fetch(cfg.SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/rpc/" + fn, {
+      method: "POST",
+      // Legacy anon keys are JWTs and go in Authorization too; new sb_publishable_ keys go only in apikey
+      headers: Object.assign({ "Content-Type": "application/json", apikey: cfg.SUPABASE_KEY },
+                             /^eyJ/.test(cfg.SUPABASE_KEY) ? { Authorization: "Bearer " + cfg.SUPABASE_KEY } : {}),
+      body: JSON.stringify(args)
+    });
+    const body = await res.json().catch(() => null);
+    if (!res.ok) throw new Error((body && (body.message || body.hint)) || "Network error — please try again");
+    return body;
+  }
+
+  const demo = (() => {
+    const S = { title: "Demo session", price: 12, salvage: 0, demand_min: 1, demand_max: 300, n_rounds: 30,
+                param_display: new URLSearchParams(location.search).get("click") ? "click" : "always", show_leaderboard: true, is_open: true };
+    let p = null;
+    const demand = Array.from({length: S.n_rounds}, () => S.demand_min + Math.floor(Math.random() * (S.demand_max - S.demand_min + 1)));
+    const state = () => ({ ...S, ...p, history: p.history.slice() });
+    return {
+      join_session: a => { const hi = Math.random() < .5;
+        p = { participant_id: "demo", token: "demo", nickname: a.p_nickname, condition: hi ? "high" : "low",
+              session_code: (a.p_code || "DEMO").toUpperCase(), cost: hi ? 3 : 9, history: [] }; return state(); },
+      resume_session: () => { if (!p) throw new Error("Saved game not found"); return state(); },
+      submit_order: a => { const r = p.history.length + 1, d = demand[r - 1], q = a.p_qty, s = Math.min(q, d);
+        const prof = S.price * s + S.salvage * (q - s) - p.cost * q;
+        p.history.push({ round: r, order_qty: q, demand: d, sales: s, leftover: q - s, shortage: Math.max(d - q, 0), profit: prof });
+        return { round: r, order_qty: q, demand: d, sales: s, leftover: q - s, shortage: Math.max(d - q, 0), profit: prof,
+                 cum_profit: p.history.reduce((t, h) => t + h.profit, 0), done: r === S.n_rounds }; },
+      leaderboard: () => { const tot = p.history.reduce((t, h) => t + h.profit, 0);
+        const qs = Math.round(S.demand_min + (S.price - p.cost) / (S.price - S.salvage) * (S.demand_max - S.demand_min));
+        const opt = p.history.reduce((t, h) => t + S.price * Math.min(qs, h.demand) + S.salvage * Math.max(qs - h.demand, 0) - p.cost * qs, 0);
+        return [{ condition: p.condition, rank: 1, nickname: p.nickname, rounds: p.history.length, total_profit: tot, efficiency: opt ? Math.round(1000 * tot / opt) / 10 : null }]; }
+    };
+  })();
+
+  // ---------------- State & views ----------------
+  let G = null;            // participant state from server
+  let roundStart = 0, reveals = 0, busy = false;
+
+  function show(view) { ["vJoin", "vIntro", "vPlay", "vDone"].forEach(v => $(v).classList.toggle("hidden", v !== view)); window.scrollTo(0, 0); }
+  function save() { if (!DEMO && G) localStorage.setItem(STORE, JSON.stringify({ id: G.participant_id, token: G.token, code: G.session_code })); }
+  function cum() { return G.history.reduce((t, h) => t + Number(h.profit), 0); }
+
+  function fillParams() {
+    const sv = Number(G.salvage);
+    $("iCost").textContent = money(G.cost); $("iPrice").textContent = money(G.price);
+    $("iSalvage").innerHTML = sv > 0 ? "sold for salvage at <b>" + money(sv) + "</b> each" : "<b>worthless</b> (thrown away)";
+    $("iMin").textContent = G.demand_min; $("iMax").textContent = G.demand_max; $("iRounds").textContent = G.n_rounds;
+    $("pPrice").textContent = money(G.price); $("pCost").textContent = money(G.cost); $("pSalv").textContent = money(sv);
+    $("pRange").textContent = G.demand_min + "–" + G.demand_max; $("pN").textContent = G.n_rounds;
+    $("mastSub").textContent = G.title + " · " + G.session_code;
+  }
+
+  function renderHistory() {
+    $("histBody").innerHTML = G.history.slice().reverse().map(h =>
+      `<tr><td>${h.round}</td><td>${h.order_qty}</td><td>${h.demand}</td><td>${h.sales}</td><td class="${h.profit < 0 ? "neg" : ""}">${money(h.profit)}</td></tr>`).join("");
+    $("pCum").textContent = money(cum());
+    $("pBar").style.width = (100 * G.history.length / G.n_rounds) + "%";
+  }
+
+  function startRound() {
+    const r = G.history.length + 1;
+    if (r > G.n_rounds) return finish();
+    $("pRound").textContent = r;
+    $("qty").value = ""; $("orderErr").textContent = "";
+    $("orderForm").classList.remove("hidden"); $("resultBox").classList.add("hidden");
+    const click = G.param_display === "click";
+    $("paramBox").classList.toggle("hidden", click); $("revealBtn").classList.toggle("hidden", !click);
+    reveals = 0; roundStart = performance.now();
+    renderHistory(); show("vPlay");
+    setTimeout(() => $("qty").focus(), 50);
+  }
+
+  async function finish() {
+    $("dTotal").textContent = money(cum());
+    $("dTotal").className = "big " + (cum() < 0 ? "neg" : "");
+    show("vDone");
+    if (!G.show_leaderboard) { $("lbCard").classList.add("hidden"); return; }
+    loadLeaderboard();
+  }
+
+  async function loadLeaderboard() {
+    try {
+      const rows = (await rpc("leaderboard", { p_code: G.session_code })) || [];
+      const mine = rows.filter(r => r.condition === G.condition);
+      $("lbBody").innerHTML = mine.map(r =>
+        `<tr class="${r.nickname === G.nickname ? "me" : ""}"><td>${r.rank}</td><td>${esc(r.nickname)}</td><td>${r.rounds}</td><td>${money(r.total_profit)}</td><td>${r.efficiency == null ? "–" : r.efficiency + "%"}</td></tr>`).join("")
+        || `<tr><td colspan="5" class="muted">No results yet</td></tr>`;
+    } catch (e) { $("lbBody").innerHTML = `<tr><td colspan="5" class="err">${esc(e.message)}</td></tr>`; }
+  }
+
+  // ---------------- Events ----------------
+  $("joinForm").addEventListener("submit", async e => {
+    e.preventDefault(); if (busy) return; busy = true; $("joinBtn").disabled = true; $("joinErr").textContent = "";
+    try {
+      G = await rpc("join_session", { p_code: $("code").value.trim(), p_nickname: $("nick").value.trim(),
+                                      p_student_ref: $("sref").value.trim() || null, p_user_agent: navigator.userAgent });
+      save(); fillParams(); show("vIntro");
+    } catch (err) { $("joinErr").textContent = err.message; }
+    busy = false; $("joinBtn").disabled = false;
+  });
+
+  $("startBtn").addEventListener("click", startRound);
+  $("revealBtn").addEventListener("click", () => { reveals++; $("paramBox").classList.remove("hidden"); $("revealBtn").classList.add("hidden"); });
+
+  $("orderForm").addEventListener("submit", async e => {
+    e.preventDefault(); if (busy) return;
+    const q = Number($("qty").value);
+    if (!Number.isInteger(q) || q < 0) { $("orderErr").textContent = "Enter a whole number, 0 or more."; return; }
+    busy = true; $("orderBtn").disabled = true; $("orderErr").textContent = "";
+    try {
+      const r = await rpc("submit_order", { p_participant: G.participant_id, p_token: G.token, p_round: G.history.length + 1,
+        p_qty: q, p_response_ms: Math.round(performance.now() - roundStart), p_param_reveals: G.param_display === "click" ? reveals : null });
+      if (DEMO) G.history = demo.resume_session().history;
+      else G.history.push({ round: r.round, order_qty: r.order_qty, demand: r.demand, sales: r.sales, leftover: r.leftover, shortage: r.shortage, profit: r.profit });
+      $("rQ").textContent = r.order_qty; $("rD").textContent = r.demand; $("rS").textContent = r.sales;
+      $("rNote").textContent = r.leftover > 0 ? `${r.leftover} unit${r.leftover > 1 ? "s" : ""} left over`
+                             : r.shortage > 0 ? `${r.shortage} customer${r.shortage > 1 ? "s" : ""} turned away` : "Exactly right!";
+      $("rP").textContent = money(r.profit); $("rP").className = r.profit < 0 ? "neg" : "pos";
+      $("nextBtn").textContent = r.done ? "See final results" : "Next round";
+      $("orderForm").classList.add("hidden"); $("resultBox").classList.remove("hidden");
+      renderHistory(); $("nextBtn").focus();
+    } catch (err) {
+      $("orderErr").textContent = err.message;
+      // If out of sync (e.g. two tabs), reload state from the server
+      if (/sync|completed/.test(err.message) && !DEMO) { try { G = { ...G, ...(await rpc("resume_session", { p_participant: G.participant_id, p_token: G.token })) }; startRound(); } catch (_) {} }
+    }
+    busy = false; $("orderBtn").disabled = false;
+  });
+
+  $("nextBtn").addEventListener("click", startRound);
+  $("lbRefresh").addEventListener("click", loadLeaderboard);
+
+  // ---------------- Boot: resume a saved game if this browser has one ----------------
+  (async () => {
+    if (DEMO) $("demoBanner").classList.remove("hidden");
+    const urlCode = new URLSearchParams(location.search).get("code");
+    if (urlCode) $("code").value = urlCode.toUpperCase();
+    const saved = DEMO ? null : JSON.parse(localStorage.getItem(STORE) || "null");
+    if (saved && (!urlCode || urlCode.toUpperCase() === saved.code)) {
+      try {
+        G = await rpc("resume_session", { p_participant: saved.id, p_token: saved.token });
+        fillParams();
+        return G.history.length === 0 ? show("vIntro") : G.history.length >= G.n_rounds ? finish() : startRound();
+      } catch (_) { localStorage.removeItem(STORE); }
+    }
+    show("vJoin");
+  })();
+})();
+</script>
+</body>
+</html>

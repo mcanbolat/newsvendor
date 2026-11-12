@@ -1,0 +1,23 @@
+# Pings the database every 3 days so the free Supabase project is never
+# paused for inactivity (free projects pause after ~7 idle days).
+# Needs two repository secrets: SUPABASE_URL and SUPABASE_KEY
+# (Settings → Secrets and variables → Actions → New repository secret).
+name: Keep Supabase awake
+on:
+  schedule:
+    - cron: "17 9 */3 * *"
+  workflow_dispatch: {}
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call ping()
+        env:
+          URL: ${{ secrets.SUPABASE_URL }}
+          KEY: ${{ secrets.SUPABASE_KEY }}
+        run: |
+          AUTH=()
+          if [[ "$KEY" == eyJ* ]]; then AUTH=(-H "Authorization: Bearer $KEY"); fi
+          curl -fsS -X POST "${URL%/}/rest/v1/rpc/ping" \
+            -H "apikey: $KEY" "${AUTH[@]}" -H "Content-Type: application/json" -d '{}'
+          echo " — database pinged"
