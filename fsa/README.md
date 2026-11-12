@@ -55,6 +55,48 @@ which cells of the 2×2 to use · whether to show the intro and the end summary.
 Once a student has joined, the settings are locked so the data stay comparable. To change something,
 create a new session.
 
+## 2027 design with carryover (default for new sessions)
+
+The **2027 design** button fills in the defaults below; **Paper's design** restores the original
+settings ($1,000–$2,000, no carryover, incident $1,900).
+
+| Setting | 2027 design | Paper's design |
+|---|---|---|
+| Contribution allowed | $0–$3,500 (2027 legal limit) | $1,000–$2,000 |
+| Need range shown in the graph | $1,500–$3,500 | $1,000–$2,000 |
+| Carryover cap | $700 (2027 limit) | none |
+| Incident (year 5) | $4,000 | $1,900 |
+| Benchmark | target balance y* = $2,668 | Q* = $1,360 |
+
+**Need sequence.** 3150, 3050, 1550, 2250, 2500, 1700, 3300, 3450, 2100, 2650, 2900, 2750, 1850, 2350, 1950.
+It holds one value from each fifteenth of U[$1,500, $3,500] (rounded to $50), so the realised needs match the
+distribution shown in the graph. The order was chosen so that years 1–5 and years 6–15 both average $2,500, the
+year-to-year correlation is about zero (−0.01), there are no runs of more than two rises or falls, and the normal need in
+the incident year is the median ($2,500). The incident then raises year-5 need by $1,500, above the
+contribution limit, so even a maximum contribution leaves a shortfall unless money was carried over.
+
+**Carryover.** Money left at year end can be carried into the next year up to the cap. Astute participants
+enter how much to carry (no default, so the form does not suggest an amount) and spend the rest on the
+eligible-item categories or forfeit it. For Uninformed participants the plan carries over the maximum
+automatically and forfeits the rest; their message says how much was carried and forfeited. Money carried
+out of the final year counts as the participant's (the intro says so), so there is no end-of-game effect.
+
+**Benchmark.** A carried-over dollar replaces a contribution dollar next year, so only leftovers above the
+cap k are lost. The optimal policy is a target balance y* (carry-in + contribution) with
+t·P(D > y) = (1 − t − s)·P(D < y − k), where s is the value of a dollar spent on items. For uniform need on
+[a, b] and s = 0, y* = a + k + t·(b − a − k) = $2,668. The benchmark contribution is therefore
+$2,668 minus the amount carried in ($1,968–$2,668), compared with $2,220 with no carryover. A simulation
+of the dynamic problem confirms the formula.
+
+**Data.** Decisions also record `carry_in`, `balance` (contribution + carry_in), `carry_out`, `items_amt`
+and `forfeit_amt`, and the views add `benchmark_contribution`. Sessions created before this change keep
+`carryover_cap = 0` and behave and export exactly as before.
+
+**Display.** The decision screen adds a year tracker, a dollar field with a slider (the slider has no thumb until it is
+used, so it does not anchor the amount), and, when carryover is on, the carried-in amount and a bar showing the
+money in the account. A chart of the participant's own past years is optional (*show_history*, off by
+default, not part of the paper's design).
+
 ---
 
 ## Setup (about 5 minutes, because the newsvendor game is already set up)
