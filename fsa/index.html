@@ -45,18 +45,37 @@
   table.t1 td:first-child,table.t1 th:first-child{text-align:left}
   table.t1 tr:last-child td{font-weight:700}
 
-  /* decision screen (mirrors the Excel form) */
-  .prompt{background:#9db7d5;color:#0e1b2a;border-radius:6px;padding:10px 14px;font-size:17px;margin-bottom:16px}
-  .grid{display:grid;grid-template-columns:1fr 150px;gap:10px 14px;align-items:center}
-  .grid .k{font-size:16px}
-  .box{font:inherit;font-size:18px;padding:10px 12px;border:1px solid #9aa6a3;border-radius:4px;background:#fff;text-align:right;font-variant-numeric:tabular-nums;width:100%}
-  .box.ro{background:#f4f6f5;color:#555}
-  .box.in{background:var(--hl)}
-  .cont{display:flex;gap:10px;margin-top:14px} .cont button{flex:1}
-  .graph{border:1px solid var(--rule);border-radius:6px;padding:8px 10px 6px;margin-top:18px}
-  .graph .k{font-size:12px;color:var(--muted)}
-  .progress{height:4px;background:var(--rule);border-radius:2px;overflow:hidden;margin:-4px 0 16px}
-  .progress div{height:100%;background:var(--accent);transition:width .3s}
+  /* decision screen */
+  .yearhead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+  .yr{font-family:Fraunces,Georgia,serif;font-size:26px;font-weight:800;letter-spacing:-.3px}
+  .yr .of{font-family:Inter,sans-serif;font-size:14px;font-weight:500;color:var(--muted)}
+  .track{display:flex;gap:3px;flex:1;max-width:300px}
+  .track i{flex:1;height:8px;border-radius:4px;background:var(--rule)}
+  .track i.done{background:var(--accent)} .track i.now{background:#e7b416}
+  .prompt{background:#e9f0f7;border-left:4px solid #5b8fc7;color:#0e1b2a;border-radius:6px;padding:10px 14px;font-size:16px;margin-bottom:16px}
+  .lbl{display:flex;justify-content:space-between;align-items:baseline;font-weight:600;font-size:15px;margin:0 0 6px}
+  .money{display:flex;align-items:center;border:2px solid #9aa6a3;border-radius:10px;background:var(--hl);padding:0 14px;transition:border-color .15s}
+  .money:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(31,111,120,.15)}
+  .money span{font-size:26px;font-weight:600;color:var(--muted)}
+  .money input{border:0;background:transparent;font:inherit;font-size:30px;font-weight:600;padding:10px 8px;width:100%;font-variant-numeric:tabular-nums;outline:none}
+  .money.sm{max-width:220px} .money.sm span{font-size:20px} .money.sm input{font-size:22px;padding:6px}
+  input[type=range]{width:100%;margin:12px 0 2px;accent-color:var(--accent);height:28px}
+  input[type=range].untouched::-webkit-slider-thumb{opacity:0} input[type=range].untouched::-moz-range-thumb{opacity:0}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0 4px}
+  .tile{background:#f6f8f7;border:1px solid var(--rule);border-radius:10px;padding:10px 12px}
+  .tile .k{font-size:13px;color:var(--muted);line-height:1.3}
+  .tile .v{font-family:Fraunces,Georgia,serif;font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:4px}
+  .tile.carry{background:#fdf6e3;border-color:#ecd9a0}
+  .meter{margin:14px 0 2px}
+  .meter .k{font-size:13px;color:var(--muted);display:flex;justify-content:space-between}
+  .meter .k b{color:var(--ink);font-size:15px}
+  .meter .bar{display:flex;height:16px;border-radius:8px;background:var(--rule);overflow:hidden;margin-top:6px}
+  .meter .bar i{display:block;height:100%;transition:width .2s}
+  .meter .bar .c{background:#e2b844} .meter .bar .n{background:var(--accent)}
+  .meter .lg{display:flex;gap:14px;font-size:12px;color:var(--muted);margin-top:5px}
+  .meter .lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+  .graph{border:1px solid var(--rule);border-radius:10px;padding:10px 12px 6px;margin-top:18px}
+  .graph .gh{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:4px}
 
   /* modal dialogs */
   .overlay{position:fixed;inset:0;background:rgba(15,25,23,.45);display:flex;align-items:center;justify-content:center;padding:14px;z-index:10}
@@ -69,17 +88,22 @@
   .incident img,.taximg img{width:100%;height:auto;display:block}
   .taximg{max-width:320px;margin:0 auto 14px}
   .modal p{margin:8px 0;font-size:17px}
-  .cats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:14px 0}
+  .cats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:10px 0 14px}
+  .cat .ic{width:34px;height:34px;display:block;margin-bottom:6px}
+  .carrybox{background:#fdf6e3;border:1px solid #ecd9a0;border-radius:10px;padding:12px 14px;margin:12px 0 4px}
+  .carrybox .ch{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px}
+  .rest{font-size:16px;margin:14px 0 0}
   .cat{border:1px solid var(--rule);border-radius:8px;padding:10px 12px;cursor:pointer;display:block;margin:0;font-weight:400}
   .cat:has(input:checked){border-color:var(--accent);background:var(--soft)}
   .cat .h{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:15px;margin-bottom:6px;gap:6px}
   .cat ul{margin:0;padding-left:16px;font-size:13.5px;color:#333} .cat li{margin:2px 0}
   .cat input,.forf input{width:20px;height:20px;accent-color:var(--accent);flex:none}
   .forf{display:flex;gap:12px;align-items:center;color:#c0281a;font-size:15px;margin:0;font-weight:400;cursor:pointer}
-  @media (max-width:560px){ .cats{grid-template-columns:1fr} .incident{grid-template-columns:110px 1fr;font-size:17px} .grid{grid-template-columns:1fr 120px} }
+  @media (max-width:560px){ .cats{grid-template-columns:1fr} .incident{grid-template-columns:110px 1fr;font-size:17px} .track{max-width:150px} }
 
   .big{font-family:Fraunces,Georgia,serif;font-size:34px;font-weight:800;text-align:center;margin:4px 0}
-  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;margin:12px 0}
+  .stats{display:flex;flex-wrap:wrap;justify-content:center;gap:12px 8px;text-align:center;margin:12px 0}
+  .stats>div{flex:1 1 30%;min-width:140px}
   .stats .k{font-size:12px;color:var(--muted)} .stats .v{font-family:Fraunces,Georgia,serif;font-size:22px;font-weight:600}
 </style>
 </head>
@@ -116,22 +140,32 @@
 
   <!-- DECISION SCREEN -->
   <section id="vPlay" class="card hidden">
+    <div class="yearhead"><div class="yr">Year <span id="pYear">1</span> <span class="of">of <span id="pN">15</span></span></div><div class="track" id="track" aria-hidden="true"></div></div>
     <div class="prompt">Please enter your contribution amount and click Continue to proceed to the next year.</div>
-    <div class="progress"><div id="pBar" style="width:0"></div></div>
     <form id="amtForm" autocomplete="off" novalidate>
-      <div class="grid">
-        <div class="k">Year</div><output class="box ro" id="pYear">1</output>
-        <label class="k" for="amt" style="margin:0;font-weight:400">FSA Amount <span class="muted" id="amtHint"></span></label>
-        <input class="box in" id="amt" type="text" inputmode="numeric">
-        <div class="k">The amount of FSA eligible healthcare need last year</div><output class="box ro" id="pNeed">0</output>
-        <div class="k">The FSA amount you contributed last year</div><output class="box ro" id="pLast">0</output>
+      <label class="lbl" for="amt">FSA Amount <span class="muted" id="amtHint"></span></label>
+      <div class="money"><span>$</span><input id="amt" type="text" inputmode="numeric" aria-describedby="amtHint"></div>
+      <input type="range" id="amtRange" class="untouched" aria-label="FSA amount slider">
+      <div class="tiles">
+        <div class="tile"><div class="k">The amount of FSA eligible healthcare need last year</div><div class="v" id="pNeed">—</div></div>
+        <div class="tile"><div class="k">The FSA amount you contributed last year</div><div class="v" id="pLast">—</div></div>
+        <div class="tile carry hidden" id="carryTile"><div class="k">Carried over from last year</div><div class="v" id="pCarry">$0</div></div>
+      </div>
+      <div class="meter hidden" id="meter">
+        <div class="k"><span>Money in your FSA this year</span><b id="mTotal">$0</b></div>
+        <div class="bar"><i class="c" id="mCarry"></i><i class="n" id="mNew"></i></div>
+        <div class="lg"><span><i style="background:#e2b844"></i>Carried over</span><span><i style="background:var(--accent)"></i>This year's contribution</span></div>
       </div>
       <div class="err" id="amtErr"></div>
-      <div class="cont"><button type="submit" id="contBtn">Continue</button></div>
+      <button class="block" type="submit" id="contBtn">Continue</button>
     </form>
     <div class="graph">
-      <div class="k">Historical FSA Eligible Healthcare Need Graph</div>
+      <div class="gh">Historical FSA Eligible Healthcare Need Graph</div>
       <div id="needGraph"></div>
+    </div>
+    <div class="graph hidden" id="histWrap">
+      <div class="gh">Your years so far</div>
+      <div id="histGraph"></div>
     </div>
   </section>
 
@@ -146,7 +180,9 @@
       <div id="dChart"></div>
       <div class="stats">
         <div><div class="k">Average contribution</div><div class="v" id="dAvg"></div></div>
-        <div><div class="k">Contributed above need</div><div class="v" id="dLeft"></div></div>
+        <div><div class="k">Left over at year end</div><div class="v" id="dLeft"></div></div>
+        <div class="hidden" id="dCarryBox"><div class="k">Carried over</div><div class="v" id="dCarry"></div></div>
+        <div class="hidden" id="dForfBox"><div class="k">Forfeited</div><div class="v" id="dForf"></div></div>
         <div><div class="k">Extra tax paid on uncovered costs</div><div class="v" id="dTax"></div></div>
       </div>
       <p class="muted" id="dNote"></p>
@@ -172,15 +208,22 @@
   <div class="bar" id="mItemsT">FSA Eligible Items</div>
   <div class="body">
     <p id="itemsMsg"></p>
-    <div class="cats">
-      <label class="cat"><div class="h">Personal Care and Hygiene <input type="checkbox" id="cPCH"></div>
-        <ul><li>Feminine care</li><li>Skin care</li><li>Oral care</li><li>Eye care</li><li>Foot care</li><li>Sexual health medications</li><li>Baby and child supplies</li></ul></label>
-      <label class="cat"><div class="h">Health and Wellness <input type="checkbox" id="cHW"></div>
-        <ul><li>Over-the-counter meds</li><li>Digestive health</li><li>Cough, cold, and flu</li><li>Allergy and sinus</li><li>Vitamins</li><li>First aid</li></ul></label>
-      <label class="cat"><div class="h">Specialized Care <input type="checkbox" id="cSC"></div>
-        <ul><li>Home health care devices</li><li>Test kits</li><li>Smoking cessation</li><li>Incontinence supplies (adult pads, etc.)</li></ul></label>
+    <div class="carrybox hidden" id="carryBox">
+      <div class="ch"><label for="carryAmt" style="margin:0">Carry over to next year</label><span class="muted">from $0 to <span id="carryMax"></span></span></div>
+      <div class="money sm"><span>$</span><input id="carryAmt" type="text" inputmode="numeric"></div>
     </div>
-    <label class="forf"><span>I don't want to buy anything. I understand that my leftover amount will revert back to my employer.</span><input type="checkbox" id="cForf"></label>
+    <div id="spendBox">
+      <p class="rest hidden" id="restMsg"></p>
+      <div class="cats">
+        <label class="cat"><svg class="ic" viewBox="0 0 40 40" aria-hidden="true"><rect x="6" y="14" width="16" height="22" rx="4" fill="#1f6f78"/><rect x="10" y="8" width="8" height="7" rx="2" fill="#1f6f78"/><path d="M28 6 v28" stroke="#c0702a" stroke-width="4" stroke-linecap="round"/><path d="M25 8 h6 M25 12 h6 M25 16 h6" stroke="#c0702a" stroke-width="2.5" stroke-linecap="round"/><circle cx="14" cy="25" r="3.5" fill="#fff"/></svg><div class="h">Personal Care and Hygiene <input type="checkbox" id="cPCH"></div>
+          <ul><li>Feminine care</li><li>Skin care</li><li>Oral care</li><li>Eye care</li><li>Foot care</li><li>Sexual health medications</li><li>Baby and child supplies</li></ul></label>
+        <label class="cat"><svg class="ic" viewBox="0 0 40 40" aria-hidden="true"><g transform="rotate(-35 20 20)"><rect x="6" y="13" width="28" height="14" rx="7" fill="#fff" stroke="#1f6f78" stroke-width="3"/><path d="M20 13 v14 h7 a7 7 0 0 0 0 -14z" fill="#1f6f78"/></g><path d="M29 30 l3 3 l5 -6" stroke="#c0702a" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg><div class="h">Health and Wellness <input type="checkbox" id="cHW"></div>
+          <ul><li>Over-the-counter meds</li><li>Digestive health</li><li>Cough, cold, and flu</li><li>Allergy and sinus</li><li>Vitamins</li><li>First aid</li></ul></label>
+        <label class="cat"><svg class="ic" viewBox="0 0 40 40" aria-hidden="true"><rect x="5" y="9" width="30" height="22" rx="4" fill="#fff" stroke="#1f6f78" stroke-width="3"/><path d="M9 21 h6 l3 -6 l4 11 l3 -5 h6" fill="none" stroke="#c0702a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="31" width="10" height="5" rx="1.5" fill="#1f6f78"/></svg><div class="h">Specialized Care <input type="checkbox" id="cSC"></div>
+          <ul><li>Home health care devices</li><li>Test kits</li><li>Smoking cessation</li><li>Incontinence supplies (adult pads, etc.)</li></ul></label>
+      </div>
+      <label class="forf"><span>I don't want to buy anything. I understand that my leftover amount will revert back to my employer.</span><input type="checkbox" id="cForf"></label>
+    </div>
     <div class="err" id="itemsErr"></div>
   </div>
   <div class="foot"><button type="button" id="itemsOk">Proceed</button></div>
@@ -228,9 +271,11 @@
     { art: "cal",   text: "Employees enroll in an FSA during the annual benefits selection period for the following calendar year, with a maximum contribution of {limit} in {year}." },
     { art: "scale", text: "By using pre-tax dollars for eligible expenses, employees lower their taxable income, which saves them money." },
     { art: null,    text: "For example, an employee earning $45,000 who contributes $2,000 to an FSA account would save $469 in taxes.", extra: TABLE1 },
-    { art: "lose",  text: "FSA funds are “use it or lose it,” so employees should plan for predicted medical expenses. Of course, it is impossible to perfectly predict future medical costs. FSA funds cannot be rolled over to the next calendar year, and any funds not used by year-end are forfeited back to the employer." },
+    { art: "lose",  text: "FSA funds are “use it or lose it,” so employees should plan for predicted medical expenses. Of course, it is impossible to perfectly predict future medical costs. FSA funds cannot be rolled over to the next calendar year, and any funds not used by year-end are forfeited back to the employer.",
+      carry: "FSA funds are mostly “use it or lose it,” so employees should plan for predicted medical expenses. Of course, it is impossible to perfectly predict future medical costs. In this simulation, up to {cap} of unused funds can be carried over to the next year. Any unused funds above that amount are forfeited back to the employer." },
     { art: "family",text: "In this simulation, imagine you are a 30-something-year-old employee with a spouse and two children. You will simulate {rounds} consecutive trials of making FSA contributions. You can contribute between {min} and {max} in each trial." },
-    { art: "clip",  text: "After you enter your chosen contribution, the simulation will give you the total cost of eligible medical expenses you actually incurred during that period. You will then move to the next period. The simulation will end after you complete {rounds} periods. You may be given additional directions and information while the simulation progresses." },
+    { art: "clip",  text: "After you enter your chosen contribution, the simulation will give you the total cost of eligible medical expenses you actually incurred during that period. You will then move to the next period. The simulation will end after you complete {rounds} periods. You may be given additional directions and information while the simulation progresses.",
+      carry: "After you enter your chosen contribution, the simulation will give you the total cost of eligible medical expenses you actually incurred during that period. You will then move to the next period. The simulation will end after you complete {rounds} periods. Money carried over after the last period still counts as yours. You may be given additional directions and information while the simulation progresses." },
     { art: "go",    text: "<b>You may begin when you are ready.</b>" }
   ];
 
@@ -251,10 +296,11 @@
   // Mirrors fsa_schema.sql with the default session settings
   const demo = (() => {
     const q = new URLSearchParams(location.search);
-    const S = { title: "Demo session", needs: [1200,1100,1400,1300,1600,1400,1600,1000,1200,1300,1200,1000,1900,1500,1100],
-      contrib_min: 1000, contrib_max: 2000, tax_rate: 0.36, incident_round: 5, incident_need: 1900, annual_limit: 3300, limit_year: 2025,
+    const S = { title: "Demo session", needs: [3150,3050,1550,2250,2500,1700,3300,3450,2100,2650,2900,2750,1850,2350,1950],
+      contrib_min: 0, contrib_max: 3500, need_min: 1500, need_max: 3500, carryover_cap: q.get("carry") === "0" ? 0 : 700,
+      tax_rate: 0.36, incident_round: 5, incident_need: 4000, annual_limit: 3500, limit_year: 2027,
       incident_text: "Uh-oh! Your son fell from his bicycle and shattered your wallet! Your FSA spending jumped to {need}!",
-      show_intro: q.get("intro") !== "0", show_debrief: true, is_open: true };
+      show_intro: q.get("intro") !== "0", show_debrief: true, show_history: q.get("history") === "1", is_open: true };
     let p = null;
     const need = r => p.incident && r === S.incident_round ? S.incident_need : S.needs[r - 1];
     const state = () => ({ ...S, ...p, n_rounds: S.needs.length, history: p.history.map(h => ({ ...h })) });
@@ -266,12 +312,18 @@
       fsa_intro_done: () => { p.intro_done = true; return null; },
       fsa_submit: a => { const r = p.history.length + 1, n = need(r), x = a.p_amount;
         if (x < S.contrib_min || x > S.contrib_max) throw new Error(`Contribution must be a whole-dollar amount between $${S.contrib_min} and $${S.contrib_max}`);
-        const h = { round: r, contribution: x, need: n, over_amt: Math.max(x - n, 0), under_amt: Math.max(n - x, 0) };
-        h.tax_missed = Math.round(h.under_amt * S.tax_rate * 100) / 100; h.items_pending = p.knowledge === "astute" && h.over_amt > 0; p.history.push(h);
+        const prev = p.history[r - 2], cin = prev ? (prev.carry_out || 0) : 0, bal = x + cin;
+        const h = { round: r, contribution: x, need: n, carry_in: cin, balance: bal, over_amt: Math.max(bal - n, 0), under_amt: Math.max(n - bal, 0) };
+        h.tax_missed = Math.round(h.under_amt * S.tax_rate * 100) / 100; h.items_pending = p.knowledge === "astute" && h.over_amt > 0;
+        if (h.items_pending) { h.carry_out = null; h.forfeit_amt = null; }
+        else { h.carry_out = Math.min(h.over_amt, S.carryover_cap); h.forfeit_amt = h.over_amt - h.carry_out; h.items_amt = 0; }
+        p.history.push(h);
         const pop = p.incident && r === S.incident_round;
         return { ...h, incident_popup: pop, incident_text: pop ? S.incident_text.replace("{need}", usd(n)) : null, done: r === S.needs.length }; },
-      fsa_record_items: a => { if (!(a.p_pch || a.p_hw || a.p_sc || a.p_forfeit)) throw new Error("Choose at least one category, or tick the box to forfeit");
-        p.history[a.p_round - 1].items_pending = false; return { ok: true }; }
+      fsa_record_items: a => { const h = p.history[a.p_round - 1], c = a.p_carry || 0, rest = h.over_amt - c, buy = a.p_pch || a.p_hw || a.p_sc;
+        if (c < 0 || c > Math.min(h.over_amt, S.carryover_cap)) throw new Error(`You can carry over between $0 and $${Math.min(h.over_amt, S.carryover_cap)}`);
+        if (rest > 0 && !(buy || a.p_forfeit)) throw new Error("Choose at least one category, or tick the box to forfeit");
+        h.carry_out = c; h.items_amt = buy && rest > 0 ? rest : 0; h.forfeit_amt = buy ? 0 : rest; h.items_pending = false; return { ok: true }; }
     };
   })();
 
@@ -280,7 +332,7 @@
   const VIEWS = ["vJoin", "vIntro", "vPlay", "vDone"];
   function show(view) { VIEWS.forEach(v => $(v).classList.toggle("hidden", v !== view)); window.scrollTo(0, 0); }
   function save() { if (!DEMO && G) localStorage.setItem(STORE, JSON.stringify({ id: G.participant_id, token: G.token, code: G.session_code })); }
-  const fill = s => s.replace(/\{min\}/g, usd(G.contrib_min)).replace(/\{max\}/g, usd(G.contrib_max))
+  const fill = s => s.replace(/\{cap\}/g, usd(G.carryover_cap)).replace(/\{min\}/g, usd(G.contrib_min)).replace(/\{max\}/g, usd(G.contrib_max))
                      .replace(/\{limit\}/g, usd(G.annual_limit)).replace(/\{year\}/g, G.limit_year).replace(/\{rounds\}/g, G.n_rounds);
 
   // modal helper: shows one dialog and resolves when its button is clicked
@@ -293,7 +345,8 @@
   // ---------------- Intro ----------------
   function renderSlide() {
     const s = SLIDES[slideIx];
-    $("slide").innerHTML = (s.art ? `<div class="art">${ICON[s.art]}</div>` : "") + `<div class="txt">${fill(s.text)}</div>` + (s.extra || "");
+    const txt = G.carryover_cap > 0 && s.carry ? s.carry : s.text;
+    $("slide").innerHTML = (s.art ? `<div class="art">${ICON[s.art]}</div>` : "") + `<div class="txt">${fill(txt)}</div>` + (s.extra || "");
     $("dots").innerHTML = SLIDES.map((_, i) => `<i class="${i === slideIx ? "on" : ""}"></i>`).join("");
     $("backBtn").style.visibility = slideIx ? "visible" : "hidden";
     $("fwdBtn").textContent = slideIx === SLIDES.length - 1 ? "Begin the simulation" : "Next";
@@ -307,29 +360,67 @@
   function startIntro() { slideIx = 0; introStart = performance.now(); renderSlide(); show("vIntro"); }
 
   // ---------------- Decision screen ----------------
-  // The Excel form showed a fixed bar chart of past needs across the contribution range (roughly flat = uniform)
+  // A fixed bar chart of past needs across the need range (roughly flat = uniform), as in the original form
+  const kfmt = v => Number(v).toLocaleString("en-US");
   function needGraph() {
     const H = [0.98, 0.96, 0.98, 0.98, 0.96, 0.98, 0.93, 0.98, 0.95, 0.94, 0.91], n = H.length;
-    const W = 560, h = 120, bw = W / n, ticks = H.map((_, i) => Math.round(G.contrib_min + i * (G.contrib_max - G.contrib_min) / (n - 1)));
-    return `<svg viewBox="0 0 ${W} ${h + 22}" style="width:100%;height:auto" role="img" aria-label="Past needs were spread evenly between ${usd(G.contrib_min)} and ${usd(G.contrib_max)}">
-      ${[0.25, 0.5, 0.75, 1].map(f => `<line x1="0" x2="${W}" y1="${h - f * h * 0.95}" y2="${h - f * h * 0.95}" stroke="#e3e8e6"/>`).join("")}
-      ${H.map((v, i) => `<rect x="${i * bw + bw * 0.18}" y="${h - v * h * 0.95}" width="${bw * 0.64}" height="${v * h * 0.95}" fill="#5b9bd5"/>`).join("")}
-      ${ticks.map((t, i) => `<text x="${i * bw + bw / 2}" y="${h + 16}" font-size="12" text-anchor="middle" fill="#444" font-family="Inter,sans-serif">${t}</text>`).join("")}
+    const W = 560, h = 118, bw = W / n, lo = G.need_min, hi = G.need_max;
+    const ticks = H.map((_, i) => Math.round(lo + i * (hi - lo) / (n - 1)));
+    return `<svg viewBox="0 0 ${W} ${h + 24}" style="width:100%;height:auto" role="img" aria-label="Past needs were spread evenly between ${usd(lo)} and ${usd(hi)}">
+      <defs><linearGradient id="gb" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#4f9aa3"/><stop offset="1" stop-color="#1f6f78"/></linearGradient></defs>
+      ${[0.25, 0.5, 0.75].map(f => `<line x1="0" x2="${W}" y1="${h - f * h}" y2="${h - f * h}" stroke="#e8eeec"/>`).join("")}
+      <line x1="0" x2="${W}" y1="${h}" y2="${h}" stroke="#c9d3d0"/>
+      ${H.map((v, i) => `<rect x="${i * bw + bw * 0.16}" y="${h - v * h * 0.95}" width="${bw * 0.68}" height="${v * h * 0.95}" rx="4" fill="url(#gb)"/>`).join("")}
+      ${ticks.map((t, i) => `<text x="${i * bw + bw / 2}" y="${h + 17}" font-size="${ticks[0] >= 1000 && hi >= 10000 ? 10 : 11.5}" text-anchor="middle" fill="#5f6b68" font-family="Inter,sans-serif">${kfmt(t)}</text>`).join("")}
     </svg>`;
   }
+  // Optional (session setting): the participant's own past contributions and needs
+  function histGraph() {
+    const H = G.history; if (!H.length) return `<div class="muted" style="font-size:13px">Your past years will appear here.</div>`;
+    const W = 560, Ht = 150, pad = 40, n = G.n_rounds, lo = Math.min(G.contrib_min, G.need_min), hi = Math.max(G.contrib_max, G.need_max, ...H.map(h => h.need));
+    const x = r => pad + (r - 1) * (W - pad - 10) / Math.max(n - 1, 1), y = v => Ht - 20 - (v - lo) / (hi - lo) * (Ht - 30);
+    const line = (k, c, wd, dash) => `<path d="${H.map((h, i) => `${i ? "L" : "M"}${x(h.round)},${y(h[k])}`).join("")}" fill="none" stroke="${c}" stroke-width="${wd}" ${dash ? `stroke-dasharray="${dash}"` : ""}/>` + H.map(h => `<circle cx="${x(h.round)}" cy="${y(h[k])}" r="3.5" fill="${c}" stroke="#fff" stroke-width="1.5"/>`).join("");
+    return `<svg viewBox="0 0 ${W} ${Ht}" style="width:100%;height:auto" role="img" aria-label="Your past contributions and needs">
+      ${[lo, (lo + hi) / 2, hi].map(v => `<line x1="${pad}" x2="${W - 10}" y1="${y(v)}" y2="${y(v)}" stroke="#e8eeec"/><text x="${pad - 6}" y="${y(v) + 4}" font-size="10.5" text-anchor="end" fill="#5f6b68" font-family="Inter,sans-serif">${kfmt(Math.round(v))}</text>`).join("")}
+      ${line("need", "#9aa6a3", 2, "4 3")}${line("contribution", "#1f6f78", 2.5)}
+      ${Array.from({ length: n }, (_, i) => `<text x="${x(i + 1)}" y="${Ht - 4}" font-size="10" text-anchor="middle" fill="#5f6b68" font-family="Inter,sans-serif">${i + 1}</text>`).join("")}
+    </svg><div class="muted" style="font-size:12px"><span style="color:#1f6f78">●</span> Your contribution &nbsp; <span style="color:#9aa6a3">●</span> Need</div>`;
+  }
+  const carryIn = () => { const l = G.history[G.history.length - 1]; return l ? (l.carry_out || 0) : 0; };
+  function syncMeter() {
+    if (!(G.carryover_cap > 0)) return;
+    const c = carryIn(), raw = $("amt").value.replace(/[$,\s]/g, ""), x = /^\d+$/.test(raw) ? Math.min(Number(raw), G.contrib_max) : 0;
+    const full = G.contrib_max + G.carryover_cap;
+    $("mCarry").style.width = (100 * c / full) + "%"; $("mNew").style.width = (100 * x / full) + "%";
+    $("mTotal").textContent = usd(c + x);
+  }
+  $("amt").addEventListener("input", () => {
+    const raw = $("amt").value.replace(/[$,\s]/g, "");
+    if (/^\d+$/.test(raw)) { $("amtRange").value = raw; $("amtRange").classList.remove("untouched"); }
+    syncMeter();
+  });
+  $("amtRange").addEventListener("input", () => { $("amtRange").classList.remove("untouched"); $("amt").value = $("amtRange").value; syncMeter(); });
 
   function startYear() {
     const last = G.history[G.history.length - 1];
     if (last && last.items_pending) return showItems(last);           // resumed mid-way through the leftover-funds form
     const r = G.history.length + 1;
     if (r > G.n_rounds) return finish();
-    $("pYear").textContent = r;
-    $("pNeed").textContent = last ? last.need : 0;
-    $("pLast").textContent = last ? last.contribution : 0;
-    $("pBar").style.width = (100 * G.history.length / G.n_rounds) + "%";
+    $("pYear").textContent = r; $("pN").textContent = G.n_rounds;
+    $("track").innerHTML = Array.from({ length: G.n_rounds }, (_, i) => `<i class="${i + 1 < r ? "done" : i + 1 === r ? "now" : ""}"></i>`).join("");
+    $("pNeed").textContent = last ? usd(last.need) : "—";
+    $("pLast").textContent = last ? usd(last.contribution) : "—";
+    const hasCarry = G.carryover_cap > 0;
+    $("carryTile").classList.toggle("hidden", !hasCarry); $("meter").classList.toggle("hidden", !hasCarry);
+    $("pCarry").textContent = usd(carryIn());
     $("amt").value = ""; $("amtErr").textContent = "";
     $("amtHint").textContent = `(${usd(G.contrib_min)}–${usd(G.contrib_max)})`;
+    const rg = $("amtRange"); rg.min = G.contrib_min; rg.max = G.contrib_max; rg.step = 50;
+    rg.value = G.contrib_min; rg.classList.add("untouched");    // no visible thumb until used, so the slider suggests no amount
     $("needGraph").innerHTML = needGraph();
+    $("histWrap").classList.toggle("hidden", !G.show_history);
+    if (G.show_history) $("histGraph").innerHTML = histGraph();
+    syncMeter();
     show("vPlay"); roundStart = performance.now();
     setTimeout(() => $("amt").focus(), 50);
   }
@@ -344,8 +435,10 @@
       const r = await rpc("fsa_submit", { p_participant: G.participant_id, p_token: G.token, p_round: G.history.length + 1,
                                           p_amount: x, p_response_ms: Math.round(performance.now() - roundStart) });
       G.history.push({ round: r.round, contribution: r.contribution, need: r.need, over_amt: r.over_amt, under_amt: r.under_amt,
-                       tax_missed: r.tax_missed, items_pending: r.items_pending });
-      // 1) the unexpected event, 2) feedback for the condition (same order as the VBA)
+                       tax_missed: r.tax_missed, items_pending: r.items_pending, carry_in: r.carry_in || 0, balance: r.balance ?? r.contribution,
+                       carry_out: r.carry_out, forfeit_amt: r.forfeit_amt, items_amt: r.items_pending ? null : 0 });
+      const carry = G.carryover_cap > 0, ref = carry ? "the money in your FSA" : "your contribution";
+      // 1) the unexpected event, 2) feedback for the condition (same order as the original)
       if (r.incident_popup) await modal("mIncident", "incOk", () => $("incText").textContent = r.incident_text);
       if (G.knowledge === "astute") {
         if (r.over_amt > 0) { busy = false; $("contBtn").disabled = false; return showItems(G.history[G.history.length - 1]); }
@@ -353,8 +446,10 @@
           $("tax1").textContent = `You undercontributed to your account by ${usd(r.under_amt)}.`;
           $("tax2").textContent = `In your tax bracket, you could have avoided paying ${usd(r.tax_missed)} in additional taxes if you had contributed enough!`; });
       } else {
-        if (r.over_amt > 0) await modal("mMsg", "msgOk", () => $("msgText").textContent = `Your FSA eligible healthcare spending was ${usd(r.over_amt)} lower than your contribution.`);
-        if (r.under_amt > 0) await modal("mMsg", "msgOk", () => $("msgText").textContent = `Your FSA eligible healthcare spending was ${usd(r.under_amt)} higher than your contribution.`);
+        if (r.over_amt > 0) await modal("mMsg", "msgOk", () => $("msgText").textContent =
+          `Your FSA eligible healthcare spending was ${usd(r.over_amt)} lower than ${ref}.` +
+          (carry ? ` ${usd(r.carry_out)} carries over to next year.` + (r.forfeit_amt > 0 ? ` The remaining ${usd(r.forfeit_amt)} was forfeited to your employer.` : "") : ""));
+        if (r.under_amt > 0) await modal("mMsg", "msgOk", () => $("msgText").textContent = `Your FSA eligible healthcare spending was ${usd(r.under_amt)} higher than ${ref}.`);
       }
       startYear();
     } catch (err) {
@@ -365,25 +460,51 @@
     busy = false; $("contBtn").disabled = false;
   });
 
-  // ---------------- FSA Eligible Items (Astute, over-contributed) ----------------
+  // ---------------- Leftover funds: carry over, FSA Eligible Items, or forfeit (Astute only) ----------------
+  let leftover = 0;
+  const carryCap = () => Math.min(leftover, G.carryover_cap || 0);
+  function carryValue() { const raw = $("carryAmt").value.replace(/[$,\s]/g, ""); return /^\d+$/.test(raw) ? Number(raw) : null; }
+  function syncRest() {
+    if (!(G.carryover_cap > 0)) return;
+    const c = carryValue(), ok = c !== null && c <= carryCap(), rest = ok ? leftover - c : null;
+    $("restMsg").classList.toggle("hidden", !ok);
+    $("spendBox").classList.toggle("hidden", ok && rest === 0);
+    if (ok) $("restMsg").innerHTML = rest > 0 ? `Choose how to use the remaining <b>${usd(rest)}</b>:` : "";
+  }
+  $("carryAmt").addEventListener("input", () => { $("itemsErr").textContent = ""; syncRest(); });
   function showItems(h) {
-    pendingRound = h.round; itemsStart = performance.now();
+    pendingRound = h.round; itemsStart = performance.now(); leftover = h.over_amt;
     ["cPCH", "cHW", "cSC", "cForf"].forEach(id => $(id).checked = false); $("itemsErr").textContent = "";
-    $("itemsMsg").textContent = `It is the end of the year and you have some extra money left! You have ${usd(h.over_amt)} unused. Please choose one or more of the following categories to spend your money on, or forfeit the remaining amount.`;
+    const carry = G.carryover_cap > 0;
+    $("carryBox").classList.toggle("hidden", !carry); $("restMsg").classList.add("hidden"); $("spendBox").classList.remove("hidden");
+    $("carryAmt").value = ""; $("carryMax").textContent = usd(carryCap());
+    $("itemsMsg").textContent = carry
+      ? `It is the end of the year and you have some extra money left! You have ${usd(h.over_amt)} unused. You can carry up to ${usd(carryCap())} over to next year. Please enter how much to carry over, and choose one or more of the following categories to spend the rest on, or forfeit it.`
+      : `It is the end of the year and you have some extra money left! You have ${usd(h.over_amt)} unused. Please choose one or more of the following categories to spend your money on, or forfeit the remaining amount.`;
     $("mItems").classList.remove("hidden");
+    if (carry) setTimeout(() => $("carryAmt").focus(), 30);
   }
   // forfeiting and buying are alternatives
   ["cPCH", "cHW", "cSC"].forEach(id => $(id).onchange = () => { if ($(id).checked) $("cForf").checked = false; });
   $("cForf").onchange = () => { if ($("cForf").checked) ["cPCH", "cHW", "cSC"].forEach(id => $(id).checked = false); };
   $("itemsOk").onclick = async () => {
     if (busy) return;
+    let c = 0;
+    if (G.carryover_cap > 0) {
+      c = carryValue();
+      if (c === null || c > carryCap()) { $("itemsErr").textContent = `Enter an amount to carry over, from $0 to ${usd(carryCap())}.`; $("carryAmt").focus(); return; }
+    }
+    const rest = leftover - c;
     const pick = { p_pch: $("cPCH").checked, p_hw: $("cHW").checked, p_sc: $("cSC").checked, p_forfeit: $("cForf").checked };
-    if (!(pick.p_pch || pick.p_hw || pick.p_sc || pick.p_forfeit)) { $("itemsErr").textContent = "Choose at least one category, or tick the box to forfeit."; return; }
+    if (rest > 0 && !(pick.p_pch || pick.p_hw || pick.p_sc || pick.p_forfeit)) { $("itemsErr").textContent = "Choose at least one category, or tick the box to forfeit."; return; }
+    if (rest === 0) Object.keys(pick).forEach(k => pick[k] = false);
     busy = true; $("itemsOk").disabled = true;
     try {
-      await rpc("fsa_record_items", { p_participant: G.participant_id, p_token: G.token, p_round: pendingRound, ...pick,
+      await rpc("fsa_record_items", { p_participant: G.participant_id, p_token: G.token, p_round: pendingRound, ...pick, p_carry: c,
                                       p_ms: Math.round(performance.now() - itemsStart) });
-      G.history[pendingRound - 1].items_pending = false; $("mItems").classList.add("hidden"); busy = false; $("itemsOk").disabled = false;
+      const h = G.history[pendingRound - 1], buy = pick.p_pch || pick.p_hw || pick.p_sc;
+      Object.assign(h, { items_pending: false, carry_out: c, items_amt: buy ? rest : 0, forfeit_amt: buy ? 0 : rest });
+      $("mItems").classList.add("hidden"); busy = false; $("itemsOk").disabled = false;
       startYear();
     } catch (err) { $("itemsErr").textContent = err.message; busy = false; $("itemsOk").disabled = false; }
   };
@@ -393,23 +514,34 @@
     show("vDone");
     if (!G.show_debrief) return;
     $("debrief").classList.remove("hidden");
-    const H = G.history, n = H.length, mean = H.reduce((t, h) => t + h.contribution, 0) / n;
-    $("dAvg").textContent = usd(mean);
-    $("dLeft").textContent = usd(H.reduce((t, h) => t + h.over_amt, 0));
-    $("dTax").textContent = usd(H.reduce((t, h) => t + Number(h.tax_missed), 0));
-    const qs = Math.round(G.contrib_min + G.tax_rate * (G.contrib_max - G.contrib_min));
-    $("dNote").innerHTML = `Newsvendor view: each extra dollar contributed saves ${Math.round(G.tax_rate * 100)}¢ in tax if you spend it (underage cost) but loses $1 if it goes unspent (overage cost). With needs spread evenly between ${usd(G.contrib_min)} and ${usd(G.contrib_max)}, the critical ratio is ${G.tax_rate} and the expected-value-maximising contribution is about <b>${usd(qs)}</b>.`;
-    // contribution vs need chart
-    const W = 560, Ht = 200, pad = 34, lo = Math.min(G.contrib_min, ...H.map(h => h.need)) - 100, hi = Math.max(G.contrib_max, ...H.map(h => h.need)) + 100;
+    const H = G.history, n = H.length, sum = k => H.reduce((t, h) => t + Number(h[k] || 0), 0), carry = G.carryover_cap > 0;
+    $("dAvg").textContent = usd(sum("contribution") / n);
+    $("dLeft").textContent = usd(sum("over_amt"));
+    $("dCarryBox").classList.toggle("hidden", !carry); $("dForfBox").classList.toggle("hidden", !carry);
+    $("dCarry").textContent = usd(sum("carry_out")); $("dForf").textContent = usd(sum("forfeit_amt"));
+    $("dTax").textContent = usd(sum("tax_missed"));
+    const w = G.need_max - G.need_min, k = Math.min(G.carryover_cap || 0, w);
+    const target = Math.round(G.need_min + k + G.tax_rate * (w - k));   // same formula as fsa_qstar() in the schema
+    const cents = Math.round(G.tax_rate * 100);
+    $("dNote").innerHTML = carry
+      ? `Newsvendor view: each extra dollar in your FSA saves ${cents}¢ in tax if you spend it, keeps its value if it is carried over, and loses $1 if it is forfeited. With needs spread evenly between ${usd(G.need_min)} and ${usd(G.need_max)} and up to ${usd(G.carryover_cap)} carried over, the expected-value-maximising plan keeps about <b>${usd(target)}</b> in the account each year (carryover plus contribution), so the best contribution is ${usd(target)} minus what you carried in.`
+      : `Newsvendor view: each extra dollar contributed saves ${cents}¢ in tax if you spend it (underage cost) but loses $1 if it goes unspent (overage cost). With needs spread evenly between ${usd(G.need_min)} and ${usd(G.need_max)}, the critical ratio is ${G.tax_rate} and the expected-value-maximising contribution is about <b>${usd(target)}</b>.`;
+    // contribution vs need chart, with the benchmark contribution for each year
+    const bench = H.map(h => Math.max(G.contrib_min, Math.min(G.contrib_max, target - (h.carry_in || 0))));
+    const all = [...H.map(h => h.need), ...H.map(h => h.contribution), ...bench], span = Math.max(...all) - Math.min(...all);
+    const step = span > 2500 ? 1000 : span > 1000 ? 500 : 250;
+    const W = 560, Ht = 210, pad = 40, lo = Math.floor(Math.min(...all) / step) * step, hi = Math.ceil(Math.max(...all) / step) * step;
     const x = i => pad + i * (W - pad - 10) / Math.max(n - 1, 1), y = v => Ht - 24 - (v - lo) / (hi - lo) * (Ht - 40);
-    const line = k => H.map((h, i) => `${i ? "L" : "M"}${x(i)},${y(h[k])}`).join("");
-    $("dChart").innerHTML = `<svg viewBox="0 0 ${W} ${Ht}" style="width:100%;height:auto">
-      ${[lo + 100, (lo + hi) / 2, hi - 100].map(v => `<line x1="${pad}" x2="${W - 10}" y1="${y(v)}" y2="${y(v)}" stroke="#e3e8e6"/><text x="${pad - 4}" y="${y(v) + 4}" font-size="10" text-anchor="end" fill="#666">${Math.round(v)}</text>`).join("")}
-      <line x1="${pad}" x2="${W - 10}" y1="${y(qs)}" y2="${y(qs)}" stroke="#b4441c" stroke-dasharray="5 4"/>
-      <path d="${line("need")}" fill="none" stroke="#999" stroke-width="2"/>${H.map((h, i) => `<circle cx="${x(i)}" cy="${y(h.need)}" r="3" fill="#999"/>`).join("")}
-      <path d="${line("contribution")}" fill="none" stroke="#1f6f78" stroke-width="3"/>${H.map((h, i) => `<circle cx="${x(i)}" cy="${y(h.contribution)}" r="3.5" fill="#1f6f78"/>`).join("")}
-      ${H.map((h, i) => `<text x="${x(i)}" y="${Ht - 6}" font-size="10" text-anchor="middle" fill="#666">${h.round}</text>`).join("")}
-    </svg><div class="muted" style="font-size:12px"><span style="color:#1f6f78">●</span> Your contribution &nbsp; <span style="color:#999">●</span> Actual need &nbsp; <span style="color:#b4441c">- -</span> Newsvendor benchmark</div>`;
+    const path = vals => vals.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join("");
+    const dots = (vals, c, r) => vals.map((v, i) => `<circle cx="${x(i)}" cy="${y(v)}" r="${r}" fill="${c}" stroke="#fff" stroke-width="1.5"/>`).join("");
+    const grid = Array.from({ length: Math.round((hi - lo) / step) + 1 }, (_, i) => lo + i * step);
+    $("dChart").innerHTML = `<svg viewBox="0 0 ${W} ${Ht}" style="width:100%;height:auto" role="img" aria-label="Your contributions, needs and the benchmark by year">
+      ${grid.map(v => `<line x1="${pad}" x2="${W - 10}" y1="${y(v)}" y2="${y(v)}" stroke="#e8eeec"/><text x="${pad - 6}" y="${y(v) + 4}" font-size="10.5" text-anchor="end" fill="#5f6b68" font-family="Inter,sans-serif">${kfmt(v)}</text>`).join("")}
+      <path d="${path(bench)}" fill="none" stroke="#b4441c" stroke-width="2" stroke-dasharray="5 4"/>
+      <path d="${path(H.map(h => h.need))}" fill="none" stroke="#9aa6a3" stroke-width="2"/>${dots(H.map(h => h.need), "#9aa6a3", 3)}
+      <path d="${path(H.map(h => h.contribution))}" fill="none" stroke="#1f6f78" stroke-width="3"/>${dots(H.map(h => h.contribution), "#1f6f78", 3.5)}
+      ${H.map((h, i) => `<text x="${x(i)}" y="${Ht - 6}" font-size="10" text-anchor="middle" fill="#5f6b68" font-family="Inter,sans-serif">${h.round}</text>`).join("")}
+    </svg><div class="muted" style="font-size:12px"><span style="color:#1f6f78">●</span> Your contribution &nbsp; <span style="color:#9aa6a3">●</span> Actual need &nbsp; <span style="color:#b4441c">- -</span> Newsvendor benchmark contribution</div>`;
   }
 
   // ---------------- Join & boot ----------------

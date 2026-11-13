@@ -107,26 +107,32 @@
 
         <fieldset><legend>Money</legend>
           <div class="row2">
-            <div><label>Min contribution ($)</label><input name="contrib_min" type="number" min="0" step="1" value="1000"></div>
-            <div><label>Max contribution ($)</label><input name="contrib_max" type="number" min="1" step="1" value="2000"></div>
+            <div><label>Min contribution ($)</label><input name="contrib_min" type="number" min="0" step="1" value="0"></div>
+            <div><label>Max contribution ($)</label><input name="contrib_max" type="number" min="1" step="1" value="3500"></div>
           </div>
           <label>Marginal tax rate (%)</label><input name="tax_pct" type="number" min="1" max="99" step="0.1" value="36">
           <div class="row2">
-            <div><label>Legal FSA limit ($, intro text)</label><input name="annual_limit" type="number" min="0" step="1" value="3300"></div>
-            <div><label>Limit year</label><input name="limit_year" type="number" min="2000" max="2100" step="1" value="2025"></div>
+            <div><label>Legal FSA limit ($, intro text)</label><input name="annual_limit" type="number" min="0" step="1" value="3500"></div>
+            <div><label>Limit year</label><input name="limit_year" type="number" min="2000" max="2100" step="1" value="2027"></div>
           </div>
+          <label>Carryover cap ($, 0 = no carryover)</label><input name="carryover_cap" type="number" min="0" step="1" value="700">
         </fieldset>
 
         <fieldset><legend>Yearly need (FSA-eligible spending)</legend>
+          <div class="row2">
+            <div><label>Need range shown: from ($)</label><input name="need_min" type="number" min="0" step="1" value="1500"></div>
+            <div><label>to ($)</label><input name="need_max" type="number" min="1" step="1" value="3500"></div>
+          </div>
           <label>One amount per year, comma-separated</label>
-          <textarea name="needs">1200, 1100, 1400, 1300, 1600, 1400, 1600, 1000, 1200, 1300, 1200, 1000, 1900, 1500, 1100</textarea>
-          <div style="display:flex;gap:6px;margin-top:6px">
-            <button type="button" class="ghost sm" id="needsPaper">Paper's sequence</button>
-            <button type="button" class="ghost sm" id="needsRandom">Random (uniform, $100 steps)</button>
+          <textarea name="needs">3150, 3050, 1550, 2250, 2500, 1700, 3300, 3450, 2100, 2650, 2900, 2750, 1850, 2350, 1950</textarea>
+          <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+            <button type="button" class="ghost sm" id="needs2027">2027 design</button>
+            <button type="button" class="ghost sm" id="needsPaper">Paper's design</button>
+            <button type="button" class="ghost sm" id="needsStrat">Stratified uniform (new order)</button>
           </div>
           <div class="row2">
             <div><label>Incident year</label><input name="incident_round" type="number" min="1" step="1" value="5"></div>
-            <div><label>Need in that year with incident ($)</label><input name="incident_need" type="number" min="0" step="1" value="1900"></div>
+            <div><label>Need in that year with incident ($)</label><input name="incident_need" type="number" min="0" step="1" value="4000"></div>
           </div>
           <label>Incident message (<code>{need}</code> = the amount)</label>
           <textarea name="incident_text">Uh-oh! Your son fell from his bicycle and shattered your wallet! Your FSA spending jumped to {need}!</textarea>
@@ -134,6 +140,7 @@
 
         <label class="chk"><input name="show_intro" type="checkbox" checked> Show the intro screens</label>
         <label class="chk"><input name="show_debrief" type="checkbox" checked> Show students a summary at the end</label>
+        <label class="chk"><input name="show_history" type="checkbox"> Show students a chart of their own past years (not in the paper's design)</label>
         <div class="muted" id="preview" style="margin-top:8px"></div>
         <button class="full" type="submit">Create session</button>
         <div class="err" id="newErr"></div>
@@ -163,7 +170,7 @@
       <div class="card">
         <h3>Average contribution by year</h3>
         <div class="chartbox"><canvas id="chart"></canvas></div>
-        <div class="muted" style="margin-top:6px">Solid lines: mean contribution per group. Grey dots: need in each year (no-incident value; the incident groups' need is shown as a red dot). Dashed: newsvendor benchmark Q* = min + t·(max − min).</div>
+        <div class="muted" style="margin-top:6px">Solid lines: mean contribution per group. Grey dots: need in each year (no-incident value; the incident groups' need is shown as a red dot). Dashed: newsvendor benchmark (Q* without carryover; with carryover, the target balance y* minus the amount carried in, averaged over students).</div>
       </div>
 
       <div class="grid2">
@@ -206,12 +213,17 @@ const usd = v => v == null || !isFinite(v) ? "–" : "$" + fmt(v, 0);
 const cfg = window.NV_CONFIG || {};
 const DEMO = !cfg.SUPABASE_URL || /YOUR-PROJECT/.test(cfg.SUPABASE_URL) || !cfg.SUPABASE_KEY || /YOUR-/.test(cfg.SUPABASE_KEY);
 const PAPER_NEEDS = [1200,1100,1400,1300,1600,1400,1600,1000,1200,1300,1200,1000,1900,1500,1100];
+const NEEDS_2027 = [3150,3050,1550,2250,2500,1700,3300,3450,2100,2650,2900,2750,1850,2350,1950];
 // Group numbers as in the paper's dataset
 const GROUPS = { 1: { label: "Astute · incident", color: "#1f6f78" }, 2: { label: "Uninformed · incident", color: "#c0702a" },
                  3: { label: "Astute · no incident", color: "#6aaab1", dash: [7, 4] }, 4: { label: "Uninformed · no incident", color: "#e2a86b", dash: [7, 4] } };
 const mean = a => a.length ? a.reduce((t, x) => t + x, 0) / a.length : null;
 const sd = a => { if (a.length < 2) return null; const m = mean(a); return Math.sqrt(a.reduce((t, x) => t + (x - m) ** 2, 0) / (a.length - 1)); };
-const qstar = s => Math.round(s.contrib_min + Number(s.tax_rate) * (s.contrib_max - s.contrib_min));
+// Benchmark (same as fsa_qstar() in the schema): target balance y* = need_min + k + t·(w − k), k = carryover cap
+// (capped at w = need_max − need_min). With k = 0 this is the paper's Q* = need_min + t·w.
+const nmin = s => s.need_min ?? s.contrib_min, nmax = s => s.need_max ?? s.contrib_max, cap = s => Number(s.carryover_cap || 0);
+const qstar = s => { const w = nmax(s) - nmin(s), k = Math.min(cap(s), w); return Math.round(nmin(s) + k + Number(s.tax_rate) * (w - k)); };
+const benchC = (s, d) => Math.max(s.contrib_min, Math.min(s.contrib_max, qstar(s) - (d.carry_in || 0)));
 const needOf = (s, r, inc) => inc && r === s.incident_round ? s.incident_need : s.needs[r - 1];
 
 // ---------- data layer: Supabase or demo ----------
@@ -238,7 +250,7 @@ function supabaseApi() {
       if (parts.error) throw parts.error;
       let decs = [], from = 0;   // Supabase returns at most 1000 rows per request
       for (;;) {
-        const r = await sb.from("fsa_decisions").select("participant_id,round,contribution,need,over_amt,under_amt,tax_missed,pch,hw,sc,forfeit,response_ms,items_ms,created_at")
+        const r = await sb.from("fsa_decisions").select("participant_id,round,contribution,need,carry_in,balance,over_amt,under_amt,tax_missed,carry_out,items_amt,forfeit_amt,pch,hw,sc,forfeit,response_ms,items_ms,created_at")
           .eq("session_id", id).order("id").range(from, from + 999);
         if (r.error) throw r.error; decs = decs.concat(r.data); if (r.data.length < 1000) break; from += 1000;
       }
@@ -249,7 +261,7 @@ function supabaseApi() {
 
 function demoApi() {
   // Simulated class roughly reproducing the paper's effects (Astute +90, after incident +105)
-  const S = { id: "demo1", code: "DEMO", title: "Simulated class", needs: PAPER_NEEDS, contrib_min: 1000, contrib_max: 2000, tax_rate: 0.36,
+  const S = { id: "demo1", code: "DEMO", title: "Simulated class", needs: PAPER_NEEDS, contrib_min: 1000, contrib_max: 2000, need_min: 1000, need_max: 2000, carryover_cap: 0, show_history: false, tax_rate: 0.36,
     incident_round: 5, incident_need: 1900, incident_text: "", knowledge_mode: "random", incident_mode: "random", annual_limit: 3300, limit_year: 2025,
     show_intro: true, show_debrief: true, is_open: true, created_at: new Date().toISOString() };
   const participants = [], decisions = [], rnd = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
@@ -287,6 +299,8 @@ function analyse(s, data) {
       pre: mean(ds.filter(d => d.round <= s.incident_round).map(d => d.contribution)),
       post: mean(ds.filter(d => d.round > s.incident_round).map(d => d.contribution)),
       left: ds.reduce((t, d) => t + d.over_amt, 0), tax: ds.reduce((t, d) => t + Number(d.tax_missed), 0),
+      carried: ds.reduce((t, d) => t + Number(d.carry_out || 0), 0),
+      forfeited: ds.reduce((t, d) => t + Number(d.forfeit_amt ?? (d.forfeit ? d.over_amt : 0)), 0),
       rt: mean(ds.map(d => d.response_ms).filter(x => x != null)) };
   });
   const grpOf = id => byP.get(id)?.grp;
@@ -300,6 +314,7 @@ function analyse(s, data) {
   }).filter(Boolean);
   const forms = data.decisions.filter(d => d.pch != null || d.forfeit != null);
   const items = ["pch", "hw", "sc", "forfeit"].map(k => forms.length ? 100 * forms.filter(d => d[k]).length / forms.length : 0);
+  if (cap(s) > 0) items.push(forms.length ? 100 * forms.filter(d => d.carry_out > 0).length / forms.length : 0);
   return { students, byYear, cells, items, nForms: forms.length };
 }
 
@@ -326,7 +341,7 @@ async function select(id) {
   const url = new URL("index.html", location.href); url.search = "?code=" + current.code;
   $("dTitle").textContent = current.code; $("dLink").textContent = url.href;
   const s = current;
-  $("dSettings").innerHTML = `${esc(s.title)} · ${designLabel(s)} · contribution ${usd(s.contrib_min)}–${usd(s.contrib_max)} · tax rate ${fmt(100 * s.tax_rate, 1)}% · ${s.needs.length} years · incident in year ${s.incident_round} (need ${usd(s.incident_need)}) · Q* ${usd(qstar(s))}`;
+  $("dSettings").innerHTML = `${esc(s.title)} · ${designLabel(s)} · contribution ${usd(s.contrib_min)}–${usd(s.contrib_max)} · need range ${usd(nmin(s))}–${usd(nmax(s))} · tax rate ${fmt(100 * s.tax_rate, 1)}% · carryover ${cap(s) ? "up to " + usd(cap(s)) : "none"} · ${s.needs.length} years · incident in year ${s.incident_round} (need ${usd(s.incident_need)}) · ${cap(s) ? "target balance y*" : "Q*"} ${usd(qstar(s))}`;
   await refresh();
 }
 
@@ -347,7 +362,9 @@ async function refresh() {
     ds.push({ label: G.label, data: A.byYear[c.g], borderColor: G.color, backgroundColor: G.color, borderDash: G.dash, tension: .25, spanGaps: true, pointRadius: 2.5, borderWidth: 2.5 }); });
   ds.push({ label: "Need", data: s.needs, showLine: false, pointRadius: 4, backgroundColor: "#aaa", borderColor: "#aaa" });
   if (s.incident_mode !== "no") ds.push({ label: "Need with incident", data: labels.map(r => r === s.incident_round ? s.incident_need : null), showLine: false, pointRadius: 6, pointStyle: "rectRot", backgroundColor: "#a33a2a", borderColor: "#a33a2a" });
-  ds.push({ label: "Q* (newsvendor)", data: labels.map(() => qstar(s)), borderColor: "#18211f", borderDash: [5, 5], pointRadius: 0, borderWidth: 1.2 });
+  if (cap(s) > 0) ds.push({ label: "Benchmark contribution (mean over students, y* − carry-in)", data: labels.map(r => mean(lastData.decisions.filter(d => d.round === r).map(d => benchC(s, d)))),
+                            borderColor: "#18211f", borderDash: [5, 5], pointRadius: 0, borderWidth: 1.2, spanGaps: true });
+  else ds.push({ label: "Q* (newsvendor)", data: labels.map(() => qstar(s)), borderColor: "#18211f", borderDash: [5, 5], pointRadius: 0, borderWidth: 1.2 });
   const lo = Math.min(s.contrib_min, ...s.needs, s.incident_need), hi = Math.max(s.contrib_max, ...s.needs, s.incident_need);
   drawChart("chart", { type: "line", data: { labels, datasets: ds }, options: { animation: false, maintainAspectRatio: false, interaction: { mode: "index", intersect: false },
     scales: { x: { title: { display: true, text: "Year" }, grid: { display: false } }, y: { suggestedMin: lo - 50, suggestedMax: hi + 50, title: { display: true, text: "Dollars" }, ticks: { callback: v => "$" + v.toLocaleString() } } },
@@ -359,12 +376,17 @@ async function refresh() {
     A.cells.map(c => `<tr><td><span class="dot" style="background:${GROUPS[c.g].color}"></span>${c.g}. ${GROUPS[c.g].label}</td><td>${c.people}</td>
       <td><b>${usd(c.pre[0])}</b></td><td>${usd(c.pre[1])}</td><td>${c.pre[2]}</td><td><b>${usd(c.post[0])}</b></td><td>${usd(c.post[1])}</td><td>${c.post[2]}</td>
       <td>${c.pre[0] != null && c.post[0] != null ? (c.post[0] >= c.pre[0] ? "+" : "−") + usd(Math.abs(c.post[0] - c.pre[0])) : "–"}</td></tr>`).join("");
-  $("note").innerHTML = `<b>Debrief.</b> Each dollar contributed saves <b>${fmt(100 * s.tax_rate, 1)}¢</b> of tax if it is spent (underage cost) but is lost if it goes unspent (overage cost ≈ $1 when leftover money has no value, s = 0).
-    The critical ratio is therefore t / (1 − s) = ${fmt(s.tax_rate, 2)}, and with needs spread evenly over ${usd(s.contrib_min)}–${usd(s.contrib_max)}, Q* = ${usd(qstar(s))}.
+  $("note").innerHTML = cap(s) > 0
+  ? `<b>Debrief.</b> Each dollar in the account saves <b>${fmt(100 * s.tax_rate, 1)}¢</b> of tax if it is spent. A leftover dollar within the ${usd(cap(s))} carryover cap replaces a contribution dollar next year, so it is not lost;
+    only leftovers above the cap are lost (or spent on items worth s per dollar). The best policy keeps a target balance (carry-in + contribution) y* solving t·P(D &gt; y) = (1 − t − s)·P(D &lt; y − k).
+    With s = 0 and needs spread evenly over ${usd(nmin(s))}–${usd(nmax(s))}, y* = ${usd(nmin(s))} + k + t·(w − k) = <b>${usd(qstar(s))}</b>, so the benchmark contribution is ${usd(qstar(s))} minus the amount carried in
+    (without carryover it would be ${usd(Math.round(nmin(s) + Number(s.tax_rate) * (nmax(s) - nmin(s))))}). Compare Astute vs Uninformed (Knowledge), and the change after year ${s.incident_round} in the incident groups vs the no-incident groups (Incident).`
+  : `<b>Debrief.</b> Each dollar contributed saves <b>${fmt(100 * s.tax_rate, 1)}¢</b> of tax if it is spent (underage cost) but is lost if it goes unspent (overage cost ≈ $1 when leftover money has no value, s = 0).
+    The critical ratio is therefore t / (1 − s) = ${fmt(s.tax_rate, 2)}, and with needs spread evenly over ${usd(nmin(s))}–${usd(nmax(s))}, Q* = ${usd(qstar(s))}.
     A student who values leftover money at s &gt; 0 (they can buy eligible items) should contribute more. Compare Astute vs Uninformed (Knowledge), and the change after year ${s.incident_round} in the incident groups vs the no-incident groups (Incident).`;
 
-  drawChart("items", { type: "bar", data: { labels: ["Personal Care & Hygiene", "Health & Wellness", "Specialized Care", "Forfeit"],
-    datasets: [{ label: `% of ${A.nForms} leftover-funds forms`, data: A.items, backgroundColor: ["#1f6f78", "#4f9aa3", "#8cc3c9", "#a33a2a"] }] },
+  drawChart("items", { type: "bar", data: { labels: ["Personal Care & Hygiene", "Health & Wellness", "Specialized Care", "Forfeit"].concat(cap(s) > 0 ? ["Carried over"] : []),
+    datasets: [{ label: `% of ${A.nForms} leftover-funds forms`, data: A.items, backgroundColor: ["#1f6f78", "#4f9aa3", "#8cc3c9", "#a33a2a", "#e2b844"] }] },
     options: { animation: false, maintainAspectRatio: false, plugins: { legend: { display: false } },
       scales: { y: { min: 0, max: 100, ticks: { callback: v => v + "%" } }, x: { grid: { display: false } } } } });
 
@@ -374,13 +396,13 @@ async function refresh() {
 function drawChart(id, conf) { if (charts[id]) charts[id].destroy(); if (window.Chart) charts[id] = new Chart($(id), conf); }
 
 const COLS = [["num", "ID"], ["nickname", "Nickname"], ["student_ref", "Student ID"], ["grp", "Group"], ["years", "Years"], ["mean_c", "Mean"],
-              ["pre", "Before"], ["post", "After"], ["left", "Left over"], ["tax", "Tax missed"], ["rt", "Avg sec"]];
+              ["pre", "Before"], ["post", "After"], ["left", "Left over"], ["carried", "Carried"], ["forfeited", "Forfeited"], ["tax", "Tax missed"], ["rt", "Avg sec"]];
 function renderStudents(list) {
   const rows = list.slice().sort((a, b) => { const x = a[sortKey], y = b[sortKey];
     return (x == null) - (y == null) || (typeof x === "string" ? x.localeCompare(y) : x - y) * sortDir; });
   $("partTable").innerHTML = "<tr>" + COLS.map(([k, l]) => `<th data-k="${k}">${l}${sortKey === k ? (sortDir > 0 ? " ▲" : " ▼") : ""}</th>`).join("") + "</tr>" +
     rows.map(p => `<tr><td>${p.num}</td><td>${esc(p.nickname)}</td><td>${esc(p.student_ref || "")}</td><td><span class="dot" style="background:${GROUPS[p.grp].color}"></span>${GROUPS[p.grp].label}</td>
-      <td>${p.years}</td><td>${usd(p.mean_c)}</td><td>${usd(p.pre)}</td><td>${usd(p.post)}</td><td>${usd(p.left)}</td><td>${usd(p.tax)}</td><td>${fmt(p.rt / 1000, 1)}</td></tr>`).join("");
+      <td>${p.years}</td><td>${usd(p.mean_c)}</td><td>${usd(p.pre)}</td><td>${usd(p.post)}</td><td>${usd(p.left)}</td><td>${usd(p.carried)}</td><td>${usd(p.forfeited)}</td><td>${usd(p.tax)}</td><td>${fmt(p.rt / 1000, 1)}</td></tr>`).join("");
   document.querySelectorAll("#partTable th").forEach(th => th.onclick = () => { const k = th.dataset.k; sortDir = sortKey === k ? -sortDir : 1; sortKey = k; renderStudents(list); });
 }
 
@@ -409,15 +431,18 @@ $("auto").onchange = () => setTimer();
 // Same columns as Results/datasetforpaper.csv (ID, Group, Period, Need, Contribution, PCH, HW, SC, Forfeit, Information, Incident)
 $("csvPaper").onclick = () => csv(joined().map(({ d, p }) => ({ ID: p.num, Group: p.grp, Period: d.round, Need: d.need, Contribution: d.contribution,
   PCH: b01(d.pch), HW: b01(d.hw), SC: b01(d.sc), Forfeit: b01(d.forfeit), Information: p.knowledge === "astute" ? "Yes" : "No",
-  Incident: p.incident && d.round > current.incident_round ? "Yes" : "No", IncidentGroup: p.incident ? "Yes" : "No" })), `fsa_${current.code}_paper_format.csv`);
+  Incident: p.incident && d.round > current.incident_round ? "Yes" : "No", IncidentGroup: p.incident ? "Yes" : "No",
+  ...(cap(current) > 0 ? { CarryIn: d.carry_in, Balance: d.balance, CarryOut: d.carry_out, ItemsAmt: d.items_amt, ForfeitAmt: d.forfeit_amt } : {}) })), `fsa_${current.code}_paper_format.csv`);
 $("csvFull").onclick = () => csv(joined().map(({ d, p }) => ({ session: current.code, id: p.num, nickname: p.nickname, student_ref: p.student_ref, group: p.grp,
-  knowledge: p.knowledge, incident_group: p.incident, year: d.round, need: d.need, contribution: d.contribution, over_amt: d.over_amt, under_amt: d.under_amt,
-  tax_missed: d.tax_missed, pch: b01(d.pch), hw: b01(d.hw), sc: b01(d.sc), forfeit: b01(d.forfeit), response_ms: d.response_ms, items_ms: d.items_ms,
-  tax_rate: current.tax_rate, contrib_min: current.contrib_min, contrib_max: current.contrib_max, incident_year: current.incident_round, q_star: qstar(current), created_at: d.created_at })),
+  knowledge: p.knowledge, incident_group: p.incident, year: d.round, need: d.need, contribution: d.contribution, carry_in: d.carry_in ?? 0, balance: d.balance ?? d.contribution,
+  over_amt: d.over_amt, under_amt: d.under_amt, tax_missed: d.tax_missed, carry_out: d.carry_out, items_amt: d.items_amt, forfeit_amt: d.forfeit_amt,
+  pch: b01(d.pch), hw: b01(d.hw), sc: b01(d.sc), forfeit: b01(d.forfeit), response_ms: d.response_ms, items_ms: d.items_ms,
+  tax_rate: current.tax_rate, contrib_min: current.contrib_min, contrib_max: current.contrib_max, need_min: nmin(current), need_max: nmax(current), carryover_cap: cap(current),
+  incident_year: current.incident_round, q_star: qstar(current), benchmark_contribution: benchC(current, d), created_at: d.created_at })),
   `fsa_${current.code}_decisions.csv`);
 $("csvStudents").onclick = () => csv(analyse(current, lastData).students.map(p => ({ session: current.code, id: p.num, nickname: p.nickname, student_ref: p.student_ref,
   group: p.grp, knowledge: p.knowledge, incident_group: p.incident, years: p.years, mean_contribution: p.mean_c, sd_contribution: p.sd_c,
-  mean_before_incident_year: p.pre, mean_after_incident_year: p.post, total_left_over: p.left, total_tax_missed: p.tax,
+  mean_before_incident_year: p.pre, mean_after_incident_year: p.post, total_left_over: p.left, total_carried: p.carried, total_forfeited: p.forfeited, total_tax_missed: p.tax,
   mean_response_s: p.rt == null ? null : p.rt / 1000, intro_s: p.intro_ms == null ? null : p.intro_ms / 1000, finished: !!p.finished_at })), `fsa_${current.code}_students.csv`);
 
 // ---------- new-session form ----------
@@ -426,7 +451,8 @@ const parseNeeds = t => t.split(/[\s,;]+/).filter(Boolean).map(Number);
 function formRow() {
   const f = Object.fromEntries(new FormData(nf));
   return { title: f.title.trim() || "FSA simulation", code: f.code.trim().toUpperCase(), knowledge_mode: f.knowledge_mode, incident_mode: f.incident_mode,
-    contrib_min: +f.contrib_min, contrib_max: +f.contrib_max, tax_rate: Math.round(+f.tax_pct * 10) / 1000,
+    contrib_min: +f.contrib_min, contrib_max: +f.contrib_max, need_min: +f.need_min, need_max: +f.need_max, carryover_cap: +f.carryover_cap,
+    show_history: !!f.show_history, tax_rate: Math.round(+f.tax_pct * 10) / 1000,
     needs: parseNeeds(f.needs), incident_round: +f.incident_round, incident_need: +f.incident_need, incident_text: f.incident_text.trim(),
     annual_limit: +f.annual_limit, limit_year: +f.limit_year, show_intro: !!f.show_intro, show_debrief: !!f.show_debrief };
 }
@@ -434,6 +460,8 @@ function problem(r) {
   if (!/^[A-Z0-9]{3,12}$/.test(r.code)) return "Code: 3–12 letters or digits.";
   if (!(Number.isInteger(r.contrib_min) && Number.isInteger(r.contrib_max) && r.contrib_min >= 0 && r.contrib_max > r.contrib_min)) return "Max contribution must be above min (whole dollars).";
   if (!(r.tax_rate > 0 && r.tax_rate < 1)) return "Tax rate must be between 0 and 100%.";
+  if (!(Number.isInteger(r.need_min) && Number.isInteger(r.need_max) && r.need_min >= 0 && r.need_max > r.need_min)) return "Need range: the upper end must be above the lower end.";
+  if (!(Number.isInteger(r.carryover_cap) && r.carryover_cap >= 0)) return "Carryover cap must be 0 or more (whole dollars).";
   if (!r.needs.length || r.needs.length > 50 || r.needs.some(v => !Number.isInteger(v) || v < 0)) return "Needs: 1–50 whole-dollar amounts, separated by commas.";
   if (!(Number.isInteger(r.incident_round) && r.incident_round >= 1 && r.incident_round <= r.needs.length)) return `Incident year must be between 1 and ${r.needs.length}.`;
   if (!(r.incident_need >= 0)) return "Incident need must be 0 or more.";
@@ -442,12 +470,21 @@ function problem(r) {
 function preview() {
   const r = formRow(), bad = problem(r);
   $("preview").innerHTML = bad && !/^Code/.test(bad) ? `<span class="err">${bad}</span>` :
-    `${r.needs.length} years · mean need ${usd(mean(r.needs))} · Q* = ${usd(qstar(r))} (critical ratio = tax rate ${fmt(r.tax_rate, 3)})`;
+    r.carryover_cap > 0
+      ? `${r.needs.length} years · mean need ${usd(mean(r.needs))} · target balance y* = ${usd(qstar(r))}, so contribute ${usd(qstar(r) - Math.min(r.carryover_cap, r.need_max - r.need_min))}–${usd(qstar(r))} depending on carry-in (no-carryover Q* = ${usd(Math.round(r.need_min + r.tax_rate * (r.need_max - r.need_min)))})`
+      : `${r.needs.length} years · mean need ${usd(mean(r.needs))} · Q* = ${usd(qstar(r))} (critical ratio = tax rate ${fmt(r.tax_rate, 3)})`;
 }
 nf.oninput = preview;
-$("needsPaper").onclick = () => { nf.needs.value = PAPER_NEEDS.join(", "); nf.incident_round.value = 5; nf.incident_need.value = 1900; preview(); };
-$("needsRandom").onclick = () => { const lo = +nf.contrib_min.value, hi = +nf.contrib_max.value, k = parseNeeds(nf.needs.value).length || 15;
-  nf.needs.value = Array.from({ length: k }, () => Math.round((lo + Math.random() * (hi - lo)) / 100) * 100).join(", "); preview(); };
+const setForm = o => { Object.entries(o).forEach(([k, v]) => nf[k].value = v); preview(); };
+$("needsPaper").onclick = () => setForm({ needs: PAPER_NEEDS.join(", "), incident_round: 5, incident_need: 1900, contrib_min: 1000, contrib_max: 2000,
+  need_min: 1000, need_max: 2000, carryover_cap: 0, annual_limit: 3300, limit_year: 2025 });
+$("needs2027").onclick = () => setForm({ needs: NEEDS_2027.join(", "), incident_round: 5, incident_need: 4000, contrib_min: 0, contrib_max: 3500,
+  need_min: 1500, need_max: 3500, carryover_cap: 700, annual_limit: 3500, limit_year: 2027 });
+// one value from each 1/k-th of U[need_min, need_max] (rounded to $50), in random order
+$("needsStrat").onclick = () => { const lo = +nf.need_min.value, hi = +nf.need_max.value, k = parseNeeds(nf.needs.value).length || 15;
+  const v = Array.from({ length: k }, (_, i) => Math.round((lo + (hi - lo) * (i + .5) / k) / 50) * 50);
+  for (let i = v.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [v[i], v[j]] = [v[j], v[i]]; }
+  nf.needs.value = v.join(", "); preview(); };
 const newCode = () => "F" + Math.random().toString(36).slice(2, 7).toUpperCase();
 nf.code.value = newCode();
 nf.onsubmit = async e => { e.preventDefault(); $("newErr").textContent = "";

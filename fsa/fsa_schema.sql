@@ -13,8 +13,15 @@
 --     cells a session uses; students are spread over them by balanced
 --     randomisation.
 --   * Every number that changes over time is a session setting: tax rate,
---     contribution range, the yearly need sequence, the incident year,
---     amount and wording, and the legal annual FSA limit shown in the intro.
+--     contribution range, the need range shown in the graph, the yearly need
+--     sequence, the incident year, amount and wording, the legal annual FSA
+--     limit and the carryover cap.
+--   * Carryover (carryover_cap > 0): money left in the account at year end can
+--     be carried into next year up to the cap. Astute participants choose how
+--     much to carry and can spend the rest on FSA-eligible items or forfeit it;
+--     for Uninformed participants the plan carries over the maximum
+--     automatically and the rest is forfeited. carryover_cap = 0 reproduces the
+--     original design exactly.
 --   * The need sequence stays on the SERVER. Students only learn a year's
 --     need after they have committed their contribution for that year.
 --   * Students never touch tables; they call five functions
@@ -38,18 +45,19 @@ create table if not exists public.fsa_sessions (
   code            text not null unique check (code ~ '^[A-Z0-9]{3,12}$'),
   title           text not null default 'FSA simulation',
   -- Need (FSA-eligible spending) in each year, for a participant WITHOUT the incident.
-  -- Default = the sequence hard-coded in the VBA files (year 5 = 1600 in the no-incident files).
-  needs           int[] not null default '{1200,1100,1400,1300,1600,1400,1600,1000,1200,1300,1200,1000,1900,1500,1100}',
-  contrib_min     int  not null default 1000 check (contrib_min >= 0),
-  contrib_max     int  not null default 2000,
+  -- Default (2027 design): one value from each fifteenth of U[1,500, 3,500], in a fixed
+  -- order with equal means before and after year 5 (see README).
+  needs           int[] not null default '{3150,3050,1550,2250,2500,1700,3300,3450,2100,2650,2900,2750,1850,2350,1950}',
+  contrib_min     int  not null default 0 check (contrib_min >= 0),
+  contrib_max     int  not null default 3500,
   tax_rate        numeric not null default 0.36 check (tax_rate > 0 and tax_rate < 1),
   incident_round  int  not null default 5,
-  incident_need   int  not null default 1900 check (incident_need >= 0),
+  incident_need   int  not null default 4000 check (incident_need >= 0),
   incident_text   text not null default 'Uh-oh! Your son fell from his bicycle and shattered your wallet! Your FSA spending jumped to {need}!',
   knowledge_mode  text not null default 'random' check (knowledge_mode in ('random','astute','uninformed')),
   incident_mode   text not null default 'yes'    check (incident_mode  in ('random','yes','no')),
-  annual_limit    int  not null default 3300,    -- legal FSA maximum, shown in the intro only
-  limit_year      int  not null default 2025,
+  annual_limit    int  not null default 3500,    -- legal FSA maximum, shown in the intro only
+  limit_year      int  not null default 2027,
   show_intro      boolean not null default true,
   show_debrief    boolean not null default true, -- summary chart for the student after the last year
   is_open         boolean not null default true,
@@ -101,6 +109,43 @@ create table if not exists public.fsa_decisions (
 create index if not exists fsa_decisions_session_idx on public.fsa_decisions (session_id, round);
 
 -- ---------------------------------------------------------------------
+--  Carryover version (added Nov 2026). Additive: sessions created before
+--  this change keep carryover_cap = 0 and their original need range, so
+--  they behave and export exactly as before.
+-- ---------------------------------------------------------------------
+alter table public.fsa_sessions add column if not exists need_min      int;
+alter table public.fsa_sessions add column if not exists need_max      int;
+alter table public.fsa_sessions add column if not exists carryover_cap int not null default 0;
+alter table public.fsa_sessions add column if not exists show_history  boolean not null default false;
+update public.fsa_sessions set need_min = contrib_min where need_min is null;
+update public.fsa_sessions set need_max = contrib_max where need_max is null;
+alter table public.fsa_sessions alter column need_min set default 1500;
+alter table public.fsa_sessions alter column need_max set default 3500;
+alter table public.fsa_sessions alter column need_min set not null;
+alter table public.fsa_sessions alter column need_max set not null;
+alter table public.fsa_sessions alter column carryover_cap set default 700;
+-- new defaults for sessions created from now on (2027 limits)
+alter table public.fsa_sessions alter column needs set default '{3150,3050,1550,2250,2500,1700,3300,3450,2100,2650,2900,2750,1850,2350,1950}';
+alter table public.fsa_sessions alter column contrib_min   set default 0;
+alter table public.fsa_sessions alter column contrib_max   set default 3500;
+alter table public.fsa_sessions alter column incident_need set default 4000;
+alter table public.fsa_sessions alter column annual_limit  set default 3500;
+alter table public.fsa_sessions alter column limit_year    set default 2027;
+do $$ begin
+  alter table public.fsa_sessions add constraint fsa_sessions_need_range check (need_max > need_min and need_min >= 0);
+exception when duplicate_object then null; end $$;
+do $$ begin
+  alter table public.fsa_sessions add constraint fsa_sessions_carry_cap check (carryover_cap >= 0);
+exception when duplicate_object then null; end $$;
+
+alter table public.fsa_decisions add column if not exists carry_in    int not null default 0; -- carried in from last year
+alter table public.fsa_decisions add column if not exists balance     int;  -- contribution + carry_in
+alter table public.fsa_decisions add column if not exists carry_out   int;  -- carried into next year
+alter table public.fsa_decisions add column if not exists items_amt   int;  -- leftover spent on eligible items
+alter table public.fsa_decisions add column if not exists forfeit_amt int;  -- leftover forfeited
+update public.fsa_decisions set balance = contribution + carry_in where balance is null;
+
+-- ---------------------------------------------------------------------
 --  Helpers
 -- ---------------------------------------------------------------------
 -- Need in year r for a participant (the incident replaces that year's need)
@@ -109,11 +154,18 @@ returns int language sql immutable as $$
   select case when has_incident and r = s.incident_round then s.incident_need else s.needs[r] end
 $$;
 
--- Newsvendor benchmark: with p = 1, c = 1 − t and salvage s = 0 the critical ratio is the
--- tax rate t, so Q* = F⁻¹(t). For need ~ U[min, max] this is min + t·(max − min).
+-- Newsvendor benchmark (risk-neutral, leftover items valued at 0).
+--  No carryover: with p = 1, c = 1 − t and salvage 0 the critical ratio is the tax rate t,
+--    so Q* = F⁻¹(t) = need_min + t·(need_max − need_min).
+--  Carryover cap k: a leftover dollar within the cap replaces a contribution dollar next
+--    year, so only leftovers above k are lost. The optimal policy is a target BALANCE y*
+--    (contribution + carry-in) with t·P(D > y) = (1 − t)·P(D < y − k); for uniform need
+--    y* = need_min + k + t·(need_max − need_min − k). The benchmark contribution in a year
+--    is y* minus the amount carried in. With k = 0 this is Q*.
 create or replace function public.fsa_qstar(s public.fsa_sessions)
 returns numeric language sql immutable as $$
-  select round(s.contrib_min + s.tax_rate * (s.contrib_max - s.contrib_min))
+  select round(s.need_min + least(s.carryover_cap, s.need_max - s.need_min)
+               + s.tax_rate * (s.need_max - s.need_min - least(s.carryover_cap, s.need_max - s.need_min)))
 $$;
 
 -- Parameters can't change once anyone has joined (keeps data interpretable)
@@ -122,10 +174,10 @@ returns trigger language plpgsql security definer set search_path = public as $$
 begin
   if exists (select 1 from fsa_participants where session_id = old.id) and
      (new.needs, new.contrib_min, new.contrib_max, new.tax_rate, new.incident_round, new.incident_need,
-      new.incident_text, new.knowledge_mode, new.incident_mode)
+      new.incident_text, new.knowledge_mode, new.incident_mode, new.need_min, new.need_max, new.carryover_cap)
      is distinct from
      (old.needs, old.contrib_min, old.contrib_max, old.tax_rate, old.incident_round, old.incident_need,
-      old.incident_text, old.knowledge_mode, old.incident_mode) then
+      old.incident_text, old.knowledge_mode, old.incident_mode, old.need_min, old.need_max, old.carryover_cap) then
     raise exception 'Settings are locked once students have joined. Create a new session instead.';
   end if;
   return new;
@@ -152,6 +204,10 @@ returns json language sql stable security definer set search_path = public as $$
     'n_rounds',       cardinality(s.needs),
     'contrib_min',    s.contrib_min,
     'contrib_max',    s.contrib_max,
+    'need_min',       s.need_min,
+    'need_max',       s.need_max,
+    'carryover_cap',  s.carryover_cap,
+    'show_history',   s.show_history,
     'tax_rate',       s.tax_rate,
     'annual_limit',   s.annual_limit,
     'limit_year',     s.limit_year,
@@ -163,6 +219,8 @@ returns json language sql stable security definer set search_path = public as $$
         select json_agg(json_build_object(
                  'round', d.round, 'contribution', d.contribution, 'need', d.need,
                  'over_amt', d.over_amt, 'under_amt', d.under_amt, 'tax_missed', d.tax_missed,
+                 'carry_in', d.carry_in, 'balance', d.balance, 'carry_out', d.carry_out,
+                 'items_amt', d.items_amt, 'forfeit_amt', d.forfeit_amt,
                  'items_pending', p.knowledge = 'astute' and d.over_amt > 0 and d.forfeit is null
                                   and d.pch is null)
                order by d.round)
@@ -243,6 +301,7 @@ declare
   p fsa_participants;
   s fsa_sessions;
   v_next int; v_n int; v_need int; v_over int; v_under int; v_tax numeric;
+  v_in int; v_bal int; v_cout int; v_forf int;
 begin
   select * into p from fsa_participants where id = p_participant and token = p_token;
   if not found then raise exception 'Invalid participant'; end if;
@@ -265,15 +324,25 @@ begin
     raise exception 'Contribution must be a whole-dollar amount between $% and $%', s.contrib_min, s.contrib_max;
   end if;
 
+  -- money carried in from last year (0 without carryover)
+  select coalesce(carry_out, 0) into v_in from fsa_decisions where participant_id = p.id and round = v_next - 1;
+  v_in    := coalesce(v_in, 0);
+  v_bal   := p_amount + v_in;
   v_need  := fsa_need(s, v_next, p.incident);
-  v_over  := greatest(p_amount - v_need, 0);
-  v_under := greatest(v_need - p_amount, 0);
+  v_over  := greatest(v_bal - v_need, 0);      -- left in the account at year end
+  v_under := greatest(v_need - v_bal, 0);      -- paid with after-tax money
   v_tax   := round(v_under * s.tax_rate, 2);
+  -- leftover: Astute participants decide in fsa_record_items; otherwise the plan
+  -- carries over up to the cap and the rest is forfeited
+  if p.knowledge = 'astute' and v_over > 0 then v_cout := null; v_forf := null;
+  else v_cout := least(v_over, s.carryover_cap); v_forf := v_over - v_cout; end if;
 
   insert into fsa_decisions (session_id, participant_id, round, contribution, need,
-                             over_amt, under_amt, tax_missed, response_ms)
+                             over_amt, under_amt, tax_missed, response_ms,
+                             carry_in, balance, carry_out, items_amt, forfeit_amt)
   values (s.id, p.id, v_next, p_amount, v_need, v_over, v_under, v_tax,
-          case when p_response_ms between 0 and 3600000 then p_response_ms end);
+          case when p_response_ms between 0 and 3600000 then p_response_ms end,
+          v_in, v_bal, v_cout, case when v_cout is not null then 0 end, v_forf);
 
   if v_next = v_n and not (p.knowledge = 'astute' and v_over > 0) then
     update fsa_participants set finished_at = now() where id = p.id;
@@ -282,6 +351,7 @@ begin
   return json_build_object(
     'round', v_next, 'contribution', p_amount, 'need', v_need,
     'over_amt', v_over, 'under_amt', v_under, 'tax_missed', v_tax,
+    'carry_in', v_in, 'balance', v_bal, 'carry_out', v_cout, 'forfeit_amt', v_forf,
     'incident_popup', p.incident and v_next = s.incident_round,
     'incident_text', case when p.incident and v_next = s.incident_round
                           then replace(s.incident_text, '{need}', '$' || to_char(v_need, 'FM999,999,990')) end,
@@ -289,15 +359,18 @@ begin
     'done', v_next = v_n);
 end $$;
 
--- FSA Eligible Items form: Astute participants who over-contributed
+-- Leftover-funds form: Astute participants with money left at year end.
+-- p_carry = amount carried into next year (0 … min(leftover, cap)); the rest is spent on
+-- the ticked categories or forfeited.
+drop function if exists public.fsa_record_items(uuid, uuid, int, boolean, boolean, boolean, boolean, int);
 create or replace function public.fsa_record_items(
   p_participant uuid, p_token uuid, p_round int,
-  p_pch boolean, p_hw boolean, p_sc boolean, p_forfeit boolean, p_ms int default null)
+  p_pch boolean, p_hw boolean, p_sc boolean, p_forfeit boolean, p_ms int default null, p_carry int default 0)
 returns json language plpgsql security definer set search_path = public as $$
 declare
   p fsa_participants;
   d fsa_decisions;
-  v_n int;
+  v_n int; v_cap int; v_carry int; v_rest int; v_buy boolean;
 begin
   select * into p from fsa_participants where id = p_participant and token = p_token;
   if not found then raise exception 'Invalid participant'; end if;
@@ -305,17 +378,28 @@ begin
   if not found then raise exception 'No contribution recorded for year %', p_round; end if;
   if p.knowledge <> 'astute' or d.over_amt <= 0 then raise exception 'No leftover funds to allocate this year'; end if;
   if d.pch is not null or d.forfeit is not null then return json_build_object('ok', true); end if;  -- already saved
-  if not (coalesce(p_pch,false) or coalesce(p_hw,false) or coalesce(p_sc,false) or coalesce(p_forfeit,false)) then
+  select cardinality(s.needs), s.carryover_cap into v_n, v_cap from fsa_sessions s where s.id = p.session_id;
+  v_carry := coalesce(p_carry, 0);
+  if v_carry < 0 or v_carry > least(d.over_amt, v_cap) then
+    raise exception 'You can carry over between $0 and $%', least(d.over_amt, v_cap);
+  end if;
+  v_rest := d.over_amt - v_carry;
+  v_buy  := coalesce(p_pch,false) or coalesce(p_hw,false) or coalesce(p_sc,false);
+  if v_rest > 0 and not (v_buy or coalesce(p_forfeit,false)) then
     raise exception 'Choose at least one category, or tick the box to forfeit';
   end if;
+  if v_buy and coalesce(p_forfeit,false) then raise exception 'Choose categories or forfeit, not both'; end if;
 
   update fsa_decisions
-     set pch = coalesce(p_pch,false), hw = coalesce(p_hw,false), sc = coalesce(p_sc,false),
-         forfeit = coalesce(p_forfeit,false),
+     set pch = coalesce(p_pch,false) and v_rest > 0, hw = coalesce(p_hw,false) and v_rest > 0,
+         sc = coalesce(p_sc,false) and v_rest > 0,
+         forfeit = coalesce(p_forfeit,false) and v_rest > 0,
+         carry_out = v_carry,
+         items_amt = case when v_buy and v_rest > 0 then v_rest else 0 end,
+         forfeit_amt = case when v_buy then 0 else v_rest end,
          items_ms = case when p_ms between 0 and 3600000 then p_ms end
    where id = d.id;
 
-  select cardinality(s.needs) into v_n from fsa_sessions s where s.id = p.session_id;
   if p_round = v_n then update fsa_participants set finished_at = coalesce(finished_at, now()) where id = p.id; end if;
   return json_build_object('ok', true);
 end $$;
@@ -361,7 +445,7 @@ grant execute on function public.fsa_join(text, text, text, text)               
 grant execute on function public.fsa_resume(uuid, uuid)                                          to anon, authenticated;
 grant execute on function public.fsa_intro_done(uuid, uuid, int)                                 to anon, authenticated;
 grant execute on function public.fsa_submit(uuid, uuid, int, int, int)                           to anon, authenticated;
-grant execute on function public.fsa_record_items(uuid, uuid, int, boolean, boolean, boolean, boolean, int) to anon, authenticated;
+grant execute on function public.fsa_record_items(uuid, uuid, int, boolean, boolean, boolean, boolean, int, int) to anon, authenticated;
 grant execute on function public.fsa_ping()                                                      to anon, authenticated;
 
 -- ---------------------------------------------------------------------
@@ -379,9 +463,13 @@ select d.session_id, s.code as session_code, d.participant_id, p.nickname, p.stu
        p.grp, p.knowledge, p.incident as incident_group,
        case when p.knowledge = 'astute' then 'Yes' else 'No' end                          as information,
        case when p.incident and d.round > s.incident_round then 'Yes' else 'No' end       as incident,
-       d.round as period, d.need, d.contribution, d.over_amt, d.under_amt, d.tax_missed,
+       d.round as period, d.need, d.contribution, d.carry_in, d.balance,
+       d.over_amt, d.under_amt, d.tax_missed,
+       d.carry_out, d.items_amt, d.forfeit_amt,
        d.pch::int as pch, d.hw::int as hw, d.sc::int as sc, d.forfeit::int as forfeit,
-       s.tax_rate, s.contrib_min, s.contrib_max, s.incident_round, fsa_qstar(s) as q_star,
+       s.tax_rate, s.contrib_min, s.contrib_max, s.need_min, s.need_max, s.carryover_cap,
+       s.incident_round, fsa_qstar(s) as q_star,
+       greatest(s.contrib_min, least(s.contrib_max, fsa_qstar(s) - d.carry_in))        as benchmark_contribution,
        d.response_ms, d.items_ms, d.created_at,
        lag(d.need - d.contribution) over w                                                as ncdiff_lag,
        d.contribution - lag(d.contribution) over w                                        as contribution_change
@@ -414,6 +502,9 @@ select session_id, session_code, participant_id, nickname, student_ref, grp, kno
        sum(under_amt)                                as total_uncovered,
        round(sum(tax_missed), 2)                     as total_tax_missed,
        sum(case when forfeit = 1 then over_amt else 0 end) as total_forfeited_astute,
+       sum(coalesce(carry_out, 0))                   as total_carried,
+       sum(coalesce(items_amt, 0))                   as total_items,
+       sum(coalesce(forfeit_amt, case when forfeit = 1 then over_amt else 0 end)) as total_forfeited,
        round(avg(response_ms) / 1000.0, 2)           as mean_response_s
 from public.fsa_v_decisions
 group by session_id, session_code, participant_id, nickname, student_ref, grp, knowledge, incident_group;
